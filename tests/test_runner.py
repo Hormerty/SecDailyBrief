@@ -1,9 +1,25 @@
 """Tests du lanceur : pré-vol, environnement, exécution, journal."""
 from __future__ import annotations
 
+import contextlib
 import sys
 
+import pytest
+
 from secdailybrief import lock, logging_setup, runner
+
+# Le verrou est un mutex Windows nommé : si l'application tourne pendant les tests — ce qui
+# arrive quand on la teste justement — tous les cas partent en « deja_en_cours ».
+REEL = lock.instance_unique
+
+
+@pytest.fixture(autouse=True)
+def verrou_isole(monkeypatch):
+    @contextlib.contextmanager
+    def libre(nom=lock.NOM_PAR_DEFAUT):
+        yield True
+
+    monkeypatch.setattr(runner.lock, "instance_unique", libre)
 
 CONFIG = {
     "email_user": "bot@example.com",
@@ -86,10 +102,13 @@ def test_execution_journalise_la_sortie_du_moteur(tmp_path, monkeypatch):
 
 
 def test_execution_refusee_si_une_autre_tourne(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner.lock, "instance_unique", REEL)
     monkeypatch.setattr(runner, "reseau_disponible", lambda *a, **k: True)
     journal = logging_setup.journaliser(tmp_path / "journal.log")
 
-    with lock.instance_unique() as seule:
+    with REEL() as seule:
+        if not seule:
+            pytest.skip("une instance de l'application tourne en ce moment")
         assert seule is True
         resultat = runner.executer(CONFIG, "motdepasse", journal, dossier=tmp_path)
 

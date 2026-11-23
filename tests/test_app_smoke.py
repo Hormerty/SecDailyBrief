@@ -14,7 +14,7 @@ import tkinter as tk
 
 import pytest
 
-from secdailybrief import app, paths
+from secdailybrief import app, paths, secrets
 
 pied_attendu = "Developed by Hormerty · © 2026"
 
@@ -128,6 +128,27 @@ def test_retour_a_la_stack_d_exemple(application):
     application._stack_reinitialiser()
     assert "Produit perso" not in application.stack
     assert "Box" in application.stack
+
+
+def test_terminer_enregistre_le_mot_de_passe_et_rafraichit_le_diagnostic(application, monkeypatch):
+    """Le diagnostic lisait l'état en mémoire : il annonçait « aucun mot de passe » après
+    l'avoir enregistré. C'est exactement le rapport qu'a reçu l'utilisateur."""
+    monkeypatch.setattr(application, "_programmer", lambda: None)  # pas de tâche en test
+    application.page_courriel()
+    application.var_expediteur.set("bot@example.com")
+    application.var_destinataire.set("bot@example.com")
+    application.var_mot_de_passe.set("abcd efgh ijkl mnop")
+    application._courriel_suivant()          # le chemin réel : « Suivant », sans test d'envoi
+    application.page_planification()         # les champs de planification n'existent qu'ici
+    application.var_heure.set("06:00")
+    application.var_fenetre.set("27")
+    application.var_fuseau.set("Europe/Brussels")
+
+    application._terminer()
+
+    assert secrets.charger_jetons(paths.chemin_secret())["smtp_password"] == \
+        "abcd efgh ijkl mnop"
+    assert application.jetons["smtp_password"] == "abcd efgh ijkl mnop"
 
 
 def test_adresse_outlook_refusee(application):

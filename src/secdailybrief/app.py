@@ -265,7 +265,18 @@ class Application:
         ttk.Button(barre, text=self._texte("courriel.tester"),
                    command=self._tester_envoi).pack(side="left", padx=8)
         ttk.Button(barre, text=self._texte("wizard.suivant"),
-                   command=self.page_stack).pack(side="right")
+                   command=self._courriel_suivant).pack(side="right")
+
+    def _courriel_suivant(self) -> None:
+        """« Suivant » enregistre ce qui est saisi avant de changer de page.
+
+        Sans cela, remplir le formulaire sans cliquer « Tester l'envoi » perdait l'adresse
+        et le mot de passe : la page suivante était atteinte, mais la configuration ne
+        contenait rien. Le test d'envoi reste facultatif — c'est une vérification, pas une
+        condition.
+        """
+        if self._collecter_courriel():
+            self.page_stack()
 
     def _synchroniser_adresses(self) -> None:
         if self.var_meme.get():
@@ -276,6 +287,10 @@ class Application:
         destinataire = self.var_destinataire.get().strip() or expediteur
         self.brouillon["email_user"] = expediteur
         self.brouillon["recipient_email"] = destinataire
+        # Le mot de passe saisi est mémorisé même sans test : exiger un test pour pouvoir
+        # terminer transformerait une vérification facultative en obligation déguisée.
+        if self.var_mot_de_passe.get():
+            self.mot_de_passe = self.var_mot_de_passe.get()
         if expediteur.lower().endswith(("@outlook.com", "@hotmail.com", "@live.com",
                                         "@outlook.fr", "@hotmail.fr")):
             # Une information, pas une erreur : rien n'est cassé, la fonctionnalité manque.
@@ -488,6 +503,10 @@ class Application:
         configuration.enregistrer(self.dossier, self.brouillon)
         secrets.enregistrer_jetons(paths.chemin_secret(),
                                    {"smtp_password": self.mot_de_passe})
+        # Le diagnostic lit l'état en mémoire : sans cette mise à jour, il continue
+        # d'annoncer « aucun mot de passe » alors qu'il vient d'être écrit. Un diagnostic
+        # doit dire ce qui est, pas ce qui était au démarrage.
+        self.jetons = {"smtp_password": self.mot_de_passe}
         configuration.enregistrer_perimetre(self.dossier, self.perimetre)
         self._programmer()
         self.reglages = dict(self.brouillon)
@@ -643,7 +662,10 @@ class Application:
             from . import doctor
 
             texte = doctor.rapport(doctor.collecter(
-                dossier=self.dossier, reglages=self.reglages, jetons=self.jetons,
+                dossier=self.dossier, reglages=self.reglages,
+                # Relu depuis le disque, et non depuis la mémoire : c'est le seul moyen
+                # d'être sûr que ce que le diagnostic affirme est bien enregistré.
+                jetons=secrets.charger_jetons(paths.chemin_secret()),
                 tester_smtp=mail.verifier_connexion))
             self.racine.after(0, lambda: self._montrer_rapport(texte))
 
