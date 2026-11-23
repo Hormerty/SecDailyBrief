@@ -23,6 +23,37 @@ def port_effectif(config: dict) -> int:
     return 587 if (config.get("smtp_security") or "ssl").lower() == "starttls" else 465
 
 
+def _ouvrir(config: dict, mot_de_passe: str):
+    """Ouvre une session SMTP authentifiée. À utiliser avec `with` (quit à la sortie)."""
+    expediteur = (config.get("email_user") or "").strip()
+    if not expediteur:
+        raise ValueError("adresse d'envoi manquante")
+
+    hote = config.get("smtp_host") or "smtp.gmail.com"
+    port = port_effectif(config)
+    securite = (config.get("smtp_security") or "ssl").lower()
+    contexte = ssl.create_default_context()
+
+    if securite == "starttls":
+        serveur = smtplib.SMTP(hote, port, timeout=20)
+        serveur.starttls(context=contexte)
+        serveur.login(expediteur, mot_de_passe)
+        return serveur
+    serveur = smtplib.SMTP_SSL(hote, port, timeout=20, context=contexte)
+    serveur.login(expediteur, mot_de_passe)
+    return serveur
+
+
+def verifier_connexion(config: dict, mot_de_passe: str) -> None:
+    """Connexion et authentification seulement — aucun message n'est envoyé.
+
+    C'est ce que le diagnostic utilise : vérifier les identifiants ne doit pas remplir la
+    boîte de l'utilisateur d'un message de plus.
+    """
+    with _ouvrir(config, mot_de_passe) as _serveur:
+        pass
+
+
 def tester_envoi(config: dict, mot_de_passe: str) -> None:
     """Envoie un message réel ; laisse remonter l'exception SMTP en cas d'échec."""
     expediteur = (config.get("email_user") or "").strip()
@@ -35,17 +66,5 @@ def tester_envoi(config: dict, mot_de_passe: str) -> None:
                ).format(expediteur=expediteur, destinataire=destinataire,
                         sujet=SUJET, corps=CORPS).encode("utf-8")
 
-    hote = config.get("smtp_host") or "smtp.gmail.com"
-    port = port_effectif(config)
-    securite = (config.get("smtp_security") or "ssl").lower()
-    contexte = ssl.create_default_context()
-
-    if securite == "starttls":
-        with smtplib.SMTP(hote, port, timeout=20) as serveur:
-            serveur.starttls(context=contexte)
-            serveur.login(expediteur, mot_de_passe)
-            serveur.sendmail(expediteur, [destinataire], message)
-    else:
-        with smtplib.SMTP_SSL(hote, port, timeout=20, context=contexte) as serveur:
-            serveur.login(expediteur, mot_de_passe)
-            serveur.sendmail(expediteur, [destinataire], message)
+    with _ouvrir(config, mot_de_passe) as serveur:
+        serveur.sendmail(expediteur, [destinataire], message)

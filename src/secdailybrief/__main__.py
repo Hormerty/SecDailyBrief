@@ -44,10 +44,15 @@ def main(argv: list[str] | None = None) -> int:
     parseur.add_argument("--run", action="store_true", help="executer la veille et envoyer")
     parseur.add_argument("--preview", action="store_true", help="ecrire un apercu sans envoyer")
     parseur.add_argument("--moteur", action="store_true", help=argparse.SUPPRESS)
+    parseur.add_argument("--doctor", action="store_true", help="diagnostic complet")
     arguments = parseur.parse_args(argv)
 
     if arguments.moteur:
         return executer_moteur()
+    if arguments.doctor:
+        from . import doctor
+
+        return doctor.executer()
     if arguments.preview:
         return _executer("preview")
     if arguments.run:

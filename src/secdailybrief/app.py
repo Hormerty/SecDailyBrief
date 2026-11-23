@@ -394,6 +394,8 @@ class Application:
             row=1, column=1, padx=8)
         ttk.Button(boutons, text=self._texte("panneau.journal"),
                    command=self._ouvrir_journal).grid(row=1, column=2, padx=8)
+        ttk.Button(boutons, text=self._texte("panneau.diagnostic"),
+                   command=self._ouvrir_diagnostic).grid(row=2, column=0, padx=(0, 8), pady=4)
 
         bas = ttk.Frame(page)
         bas.pack(side="bottom", fill="x")
@@ -452,6 +454,44 @@ class Application:
         if chemin.exists():
             lignes = chemin.read_text(encoding="utf-8", errors="replace").splitlines()
             texte.insert("end", "\n".join(lignes[-800:]))
+
+    def _ouvrir_diagnostic(self) -> None:
+        """Le diagnostic interroge le réseau et le serveur SMTP : il tourne hors du fil UI."""
+        self._afficher_statut("…")
+
+        def travail() -> None:
+            from . import doctor
+
+            texte = doctor.rapport(doctor.collecter(
+                dossier=self.dossier, reglages=self.reglages, jetons=self.jetons,
+                tester_smtp=mail.verifier_connexion))
+            self.racine.after(0, lambda: self._montrer_rapport(texte))
+
+        threading.Thread(target=travail, daemon=True).start()
+
+    def _montrer_rapport(self, texte: str) -> None:
+        lignes = [ligne for ligne in texte.splitlines() if ligne.strip()]
+        self._afficher_statut(lignes[-1] if lignes else "")
+
+        fenetre = tk.Toplevel(self.racine)
+        fenetre.title(self._texte("panneau.diagnostic"))
+        fenetre.geometry("760x420")
+        cadre = ttk.Frame(fenetre, padding=8)
+        cadre.pack(fill="both", expand=True)
+        zone = tk.Text(cadre, wrap="none", font=("Consolas", 9))
+        zone.pack(side="left", fill="both", expand=True)
+        ttk.Scrollbar(cadre, orient="vertical", command=zone.yview).pack(side="right",
+                                                                        fill="y")
+        zone.insert("end", texte)
+        zone.configure(state="disabled")
+        barre = ttk.Frame(fenetre, padding=(8, 0, 8, 8))
+        barre.pack(fill="x")
+        ttk.Button(barre, text=self._texte("commun.copier"),
+                   command=lambda: self._copier(texte)).pack(side="right")
+
+    def _copier(self, texte: str) -> None:
+        self.racine.clipboard_clear()
+        self.racine.clipboard_append(texte)
 
     def _ouvrir_about(self) -> None:
         fenetre = tk.Toplevel(self.racine)
