@@ -151,6 +151,38 @@ def test_terminer_enregistre_le_mot_de_passe_et_rafraichit_le_diagnostic(applica
     assert application.jetons["smtp_password"] == "abcd efgh ijkl mnop"
 
 
+def test_pendant_un_lancement_les_boutons_sont_desactives(application, monkeypatch):
+    """Un clic sur « Lancer maintenant » doit dire qu'il travaille, et fermer les autres portes."""
+    import threading
+    import time as _time
+
+    porte = threading.Event()
+
+    def bloque(*arguments, **options):
+        porte.wait(3)
+        return app.runner.Resultat("ok", 0, 0.1, [])
+
+    monkeypatch.setattr(app.runner, "executer", bloque)
+    application.afficher_panneau()
+    application.mot_de_passe = "motdepasse"
+
+    application._lancer("run")
+
+    assert application._en_cours is True
+    assert all(bouton.instate(["disabled"]) for bouton in application.boutons_action)
+    assert application.var_activite.get() == application._texte("panneau.en_cours")
+
+    porte.set()
+    for _ in range(100):
+        application.racine.update()
+        if not application._en_cours:
+            break
+        _time.sleep(0.02)
+
+    assert application._en_cours is False
+    assert all(bouton.instate(["!disabled"]) for bouton in application.boutons_action)
+
+
 def test_le_panneau_donne_acces_aux_reglages(application):
     """Sans cette porte, une configuration déjà enregistrée n'était plus modifiable."""
     application.afficher_panneau()

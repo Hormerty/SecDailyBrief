@@ -544,23 +544,33 @@ class Application:
 
         boutons = ttk.Frame(page)
         boutons.pack(anchor="w", pady=4)
-        ttk.Button(boutons, text=self._texte("panneau.lancer"),
-                   command=lambda: self._lancer("run")).grid(row=0, column=0, padx=(0, 8),
-                                                             pady=4)
-        ttk.Button(boutons, text=self._texte("panneau.apercu"),
-                   command=lambda: self._lancer("preview")).grid(row=0, column=1, padx=8)
-        ttk.Button(boutons, text=self._texte("panneau.rapport"),
-                   command=self._ouvrir_rapport).grid(row=0, column=2, padx=8)
-        ttk.Button(boutons, text=self._texte("panneau.sources"),
-                   command=lambda: self._lancer("sources", preflight=False)).grid(
-            row=1, column=0, padx=(0, 8), pady=4)
-        ttk.Button(boutons, text=self._texte("panneau.liens"),
-                   command=lambda: self._lancer("liens", preflight=False)).grid(
-            row=1, column=1, padx=8)
-        ttk.Button(boutons, text=self._texte("panneau.journal"),
-                   command=self._ouvrir_journal).grid(row=1, column=2, padx=8)
-        ttk.Button(boutons, text=self._texte("panneau.diagnostic"),
-                   command=self._ouvrir_diagnostic).grid(row=2, column=0, padx=(0, 8), pady=4)
+        self.boutons_action = []
+
+        def bouton(parent, texte, commande, ligne, colonne, marge=(8, 8)):
+            widget = ttk.Button(parent, text=texte, command=commande)
+            widget.grid(row=ligne, column=colonne, padx=marge, pady=4)
+            self.boutons_action.append(widget)
+            return widget
+
+        bouton(boutons, self._texte("panneau.lancer"), lambda: self._lancer("run"), 0, 0)
+        bouton(boutons, self._texte("panneau.apercu"), lambda: self._lancer("preview"), 0, 1)
+        bouton(boutons, self._texte("panneau.rapport"), self._ouvrir_rapport, 0, 2)
+        bouton(boutons, self._texte("panneau.sources"),
+               lambda: self._lancer("sources", preflight=False), 1, 0)
+        bouton(boutons, self._texte("panneau.liens"),
+               lambda: self._lancer("liens", preflight=False), 1, 1)
+        bouton(boutons, self._texte("panneau.journal"), self._ouvrir_journal, 1, 2)
+        bouton(boutons, self._texte("panneau.diagnostic"), self._ouvrir_diagnostic, 2, 0)
+
+        # Activité : une barre indéterminée et une phrase qui dit combien de temps ça prend.
+        # Sans elles, « Lancer maintenant » ne montrait rien pendant quatre minutes.
+        self.cadre_activite = ttk.Frame(page)
+        self.barre_activite = ttk.Progressbar(self.cadre_activite, mode="indeterminate",
+                                              length=220)
+        self.barre_activite.pack(side="left")
+        self.var_activite = tk.StringVar(value="")
+        ttk.Label(self.cadre_activite, textvariable=self.var_activite).pack(side="left",
+                                                                           padx=(10, 0))
 
         bas = ttk.Frame(page)
         bas.pack(side="bottom", fill="x")
@@ -620,22 +630,56 @@ class Application:
         threading.Thread(target=travail, daemon=True).start()
 
     def _lancer(self, mode: str, preflight: bool = True) -> None:
+        if getattr(self, "_en_cours", False):
+            return                      # un second clic ne lance pas un second rapport
         if not self.mot_de_passe:
             self._afficher_statut(self._texte("courriel.test.echec"))
             return
-        self._afficher_statut("…")
+
+        self._en_cours = True
+        self._resultat = None
+        self._activer_boutons(False)
+        self._afficher_activite(True)
 
         def travail() -> None:
             journal = logging_setup.journaliser(paths.chemin_journal())
             resultat = runner.executer(self.reglages, self.mot_de_passe, journal,
                                        mode=mode, dossier=self.dossier, preflight=preflight)
-            libelles = {"ok": "OK", "erreur": "erreur", "reseau": "reseau indisponible",
-                        "deja_en_cours": "deja en cours"}
-            self.racine.after(0, lambda: self._afficher_statut(
-                f"{self._texte('panneau.statut')} : {libelles.get(resultat.statut, resultat.statut)}"
-                f" ({resultat.duree:.0f} s)"))
+            # On ne touche pas à Tk depuis ce fil : `after()` y lève « main thread is not
+            # in main loop », et le panneau resterait désactivé pour de bon. On dépose le
+            # résultat, le fil principal vient le chercher.
+            self._resultat = (resultat.statut, resultat.duree)
 
         threading.Thread(target=travail, daemon=True).start()
+        self.racine.after(300, self._attendre_fin)
+
+    def _attendre_fin(self) -> None:
+        if self._resultat is None:
+            self.racine.after(300, self._attendre_fin)
+            return
+
+        statut, duree = self._resultat
+        self._resultat = None
+        self._en_cours = False
+        self._afficher_activite(False)
+        self._activer_boutons(True)
+        libelles = {"ok": "OK", "erreur": "erreur", "reseau": "reseau indisponible",
+                    "deja_en_cours": "deja en cours"}
+        self._afficher_statut(f"{self._texte('panneau.statut')} : "
+                              f"{libelles.get(statut, statut)} ({duree:.0f} s)")
+
+    def _activer_boutons(self, actif: bool) -> None:
+        for bouton in getattr(self, "boutons_action", []):
+            bouton.configure(state="normal" if actif else "disabled")
+
+    def _afficher_activite(self, actif: bool) -> None:
+        if actif:
+            self.var_activite.set(self._texte("panneau.en_cours"))
+            self.cadre_activite.pack(anchor="w", pady=(6, 0))
+            self.barre_activite.start(12)
+        else:
+            self.barre_activite.stop()
+            self.cadre_activite.pack_forget()
 
     def _ouvrir_rapport(self) -> None:
         for nom in ("preview.html", "rapport.html"):
