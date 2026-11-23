@@ -70,14 +70,16 @@ class Application:
         self.racine.protocol("WM_DELETE_WINDOW", self.racine.destroy)
         self.racine.bind("<Escape>", lambda _event: self.racine.destroy())
 
-        self.corps = ttk.Frame(self.racine, padding=16)
-        self.corps.pack(side="top", fill="both", expand=True)
-
-        # Le pied est posé en dernier sur le bas : il reste visible même si la fenêtre est
-        # réduite, et il ne dépend pas de la page affichée.
+        # Le pied est empilé AVANT la zone centrale : dans pack(), le premier arrivé reçoit
+        # sa place. Empilé après, il se retrouve avec zéro pixel quand le centre s'étend —
+        # et la mention « Developed by Hormerty » disparaît, ce qui est exactement ce
+        # qu'elle ne doit jamais faire.
         self.pied = ttk.Label(self.racine, text=self.textes["app.pied"], anchor="w",
                               padding=(12, 6), relief="groove")
         self.pied.pack(side="bottom", fill="x")
+
+        self.corps = ttk.Frame(self.racine, padding=16)
+        self.corps.pack(side="top", fill="both", expand=True)
 
         if self.reglages.get("email_user"):
             self.afficher_panneau()
@@ -151,8 +153,8 @@ class Application:
                                                                          fill="y")
 
         self.consentement = tk.BooleanVar(value=False)
-        ttk.Checkbutton(page, text=self._texte("consent.titre"), variable=self.consentement
-                        ).pack(anchor="w", pady=(8, 0))
+        ttk.Checkbutton(page, text=self._texte("consent.accepte"),
+                        variable=self.consentement).pack(anchor="w", pady=(8, 0))
 
         barre = ttk.Frame(page)
         barre.pack(side="bottom", fill="x", pady=(16, 0))

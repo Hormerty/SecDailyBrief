@@ -30,6 +30,7 @@ TEXTES: dict[str, dict[str, str]] = {
                          "votre propre serveur de messagerie. Vos réglages restent sur ce "
                          "poste et s'effacent d'un clic.",
         "consent.domaines": "Domaines contactés",
+        "consent.accepte": "J'ai compris ce que fait ce programme",
         "consent.pause": "Le programme ne tourne pas en permanence : il se réveille, "
                          "travaille une à deux minutes, puis s'arrête.",
         "courriel.titre": "Votre messagerie",
@@ -101,6 +102,7 @@ TEXTES: dict[str, dict[str, str]] = {
                          "server. Your settings stay on this machine and are erased in one "
                          "click.",
         "consent.domaines": "Domains contacted",
+        "consent.accepte": "I understand what this program does",
         "consent.pause": "The program does not run continuously: it wakes up, works for a "
                          "minute or two, then stops.",
         "courriel.titre": "Your mail account",

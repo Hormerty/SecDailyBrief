@@ -51,6 +51,11 @@ def application(racine, tmp_path, monkeypatch):
 def test_assistant_se_construit_et_le_pied_est_visible(application):
     assert application.pied.cget("text") == pied_attendu
     assert application.pied.winfo_manager() == "pack"
+    # Empilé en bas, et avec une hauteur naturelle : dans pack(), le premier arrivé reçoit
+    # sa place. Un widget peut exister, être packé, et n'avoir aucun pixel.
+    assert application.pied.pack_info()["side"] == "bottom"
+    assert application.pied.winfo_reqheight() > 10
+    assert application.corps.pack_info()["side"] == "top"
 
 
 def test_parcours_des_pages_ne_leve_pas(application):
