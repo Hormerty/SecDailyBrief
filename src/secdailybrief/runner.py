@@ -97,6 +97,14 @@ def environnement(config: dict, mot_de_passe: str, dossier: Path) -> dict[str, s
     return env
 
 
+MODES = {
+    "run": [],
+    "preview": ["--preview"],
+    "sources": ["--check-feeds"],
+    "liens": ["--check-links"],
+}
+
+
 def commande_moteur(mode: str = "run") -> list[str]:
     """Comment lancer le moteur, selon qu'on est en développement ou dans l'exécutable figé."""
     if getattr(sys, "frozen", False):
@@ -104,7 +112,7 @@ def commande_moteur(mode: str = "run") -> list[str]:
         base = [sys.executable, "--moteur"]
     else:
         base = [sys.executable, str(paths.dossier_executable() / "vendor" / "veille.py")]
-    return base + (["--preview"] if mode == "preview" else [])
+    return base + MODES.get(mode, [])
 
 
 _TRACEBACK = "Traceback (most recent call last):"
@@ -122,8 +130,13 @@ def _niveau(ligne: str) -> int:
 
 
 def executer(config: dict, mot_de_passe: str, journal: logging.Logger, *,
-             mode: str = "run", dossier: Path | None = None) -> Resultat:
-    """Une exécution complète : verrou, pré-vol, moteur, journal."""
+             mode: str = "run", dossier: Path | None = None,
+             preflight: bool = True) -> Resultat:
+    """Une exécution complète : verrou, pré-vol, moteur, journal.
+
+    `preflight=False` sert aux diagnostics — « tester les sources » doit pouvoir tourner
+    précisément quand le réseau est douteux, sinon il ne sert à rien.
+    """
     dossier = dossier or paths.s_assurer_dossier()
 
     with lock.instance_unique() as seule:
@@ -131,7 +144,7 @@ def executer(config: dict, mot_de_passe: str, journal: logging.Logger, *,
             journal.warning("Une autre execution est deja en cours.")
             return Resultat("deja_en_cours")
 
-        if not reseau_disponible():
+        if preflight and not reseau_disponible():
             journal.warning("Reseau injoignable : execution reportee, la journee reste ouverte.")
             return Resultat("reseau")
 
