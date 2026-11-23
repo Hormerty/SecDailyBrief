@@ -83,6 +83,7 @@ TEXTES: dict[str, dict[str, str]] = {
         "commun.annuler": "Annuler",
         "commun.enregistrer": "Enregistrer",
         "commun.erreur": "Erreur",
+        "commun.information": "Information",
     },
     "en": {
         "app.titre": "SecDailyBrief",
@@ -154,6 +155,7 @@ TEXTES: dict[str, dict[str, str]] = {
         "commun.annuler": "Cancel",
         "commun.enregistrer": "Save",
         "commun.erreur": "Error",
+        "commun.information": "Information",
     },
 }
 

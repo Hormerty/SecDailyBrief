@@ -226,7 +226,9 @@ class Application:
         self.brouillon["recipient_email"] = destinataire
         if expediteur.lower().endswith(("@outlook.com", "@hotmail.com", "@live.com",
                                         "@outlook.fr", "@hotmail.fr")):
-            messagebox.showinfo(self._texte("commun.erreur"), self._texte("courriel.outlook"))
+            # Une information, pas une erreur : rien n'est cassé, la fonctionnalité manque.
+            messagebox.showinfo(self._texte("commun.information"),
+                                self._texte("courriel.outlook"))
             return False
         problemes = configuration.valider(self.brouillon)
         if "courriel.expediteur" in problemes or "courriel.destinataire" in problemes:
