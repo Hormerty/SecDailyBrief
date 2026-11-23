@@ -51,6 +51,10 @@ TEXTES: dict[str, dict[str, str]] = {
         "stack.explication": "Les produits que vous surveillez. La liste proposée est "
                              "celle de l'auteur, à titre d'exemple — remplacez-la.",
         "stack.ajouter": "Ajouter un produit",
+        "stack.enregistrer": "Ajouter / mettre à jour",
+        "stack.supprimer": "Supprimer",
+        "stack.reinitialiser": "Rétablir l'exemple",
+        "stack.aide": "Préférez une locution à un mot seul : « box drive » plutôt que « box ».",
         "stack.nom": "Nom affiché",
         "stack.mots": "Locutions (séparées par des virgules)",
         "secrets.titre": "Réglages avancés",
@@ -127,6 +131,10 @@ TEXTES: dict[str, dict[str, str]] = {
         "stack.explication": "The products you watch. The proposed list is the author's, as "
                              "an example — replace it.",
         "stack.ajouter": "Add a product",
+        "stack.enregistrer": "Add / update",
+        "stack.supprimer": "Remove",
+        "stack.reinitialiser": "Restore the example",
+        "stack.aide": "Prefer a phrase to a single word: “box drive” rather than “box”.",
         "stack.nom": "Display name",
         "stack.mots": "Phrases (comma separated)",
         "secrets.titre": "Advanced settings",

@@ -12,6 +12,7 @@ Choix assumés pour cette version :
 from __future__ import annotations
 
 import locale
+import os
 import re
 import threading
 import tkinter as tk
@@ -90,6 +91,12 @@ class Application:
             self.afficher_panneau()
         else:
             self.page_langue()
+
+        # Pour les captures d'écran et la documentation : ouvrir directement une page.
+        # Sans cette variable, rien ne change pour un utilisateur.
+        page = os.environ.get("SECDailyBrief_PAGE")
+        if page and hasattr(self, f"page_{page}"):
+            getattr(self, f"page_{page}")()
 
     # --- utilitaires -------------------------------------------------------
     def _titre(self, base: int) -> tuple[str, int, str]:
@@ -282,32 +289,64 @@ class Application:
         page = self._vider()
         page.pack(fill="both", expand=True)
 
+        # grille plutôt que pack : avec une seule rangée extensible, le tableau prend la
+        # place restante et le formulaire garde la sienne. En pack(), le formulaire avait
+        # été écrasé à zéro pixel — visible seulement sur une capture.
+        page.columnconfigure(0, weight=1)
+        page.rowconfigure(2, weight=1)
+
         ttk.Label(page, text=self._texte("stack.titre"),
-                  font=self._titre(14)).pack(anchor="w")
+                  font=self._titre(14)).grid(row=0, column=0, sticky="w")
         ttk.Label(page, text=self._texte("stack.explication"), wraplength=690,
-                  justify="left").pack(anchor="w", pady=(6, 10))
+                  justify="left").grid(row=1, column=0, sticky="w", pady=(6, 10))
 
         cadre = ttk.Frame(page)
-        cadre.pack(fill="both", expand=True)
-        self.arbre = ttk.Treeview(cadre, columns=("mots",), show="tree headings", height=8)
+        cadre.grid(row=2, column=0, sticky="nsew")
+        self.arbre = ttk.Treeview(cadre, columns=("mots",), show="tree headings", height=6)
         self.arbre.heading("#0", text=self._texte("stack.nom"))
         self.arbre.heading("mots", text=self._texte("stack.mots"))
-        self.arbre.column("#0", width=200)
+        self.arbre.column("#0", width=180)
         self.arbre.pack(side="left", fill="both", expand=True)
         ttk.Scrollbar(cadre, orient="vertical", command=self.arbre.yview).pack(side="right",
                                                                               fill="y")
-        self._remplir_stack()
+        self.arbre.bind("<<TreeviewSelect>>", self._stack_selection)
+        self._charger_stack()
+
+        form = ttk.LabelFrame(page, text=self._texte("stack.ajouter"), padding=8)
+        form.grid(row=3, column=0, sticky="ew", pady=(10, 0))
+        form.columnconfigure(1, weight=1)
+
+        self.var_stack_nom = tk.StringVar()
+        self.var_stack_mots = tk.StringVar()
+
+        ttk.Label(form, text=self._texte("stack.nom")).grid(row=0, column=0, sticky="w")
+        ttk.Entry(form, textvariable=self.var_stack_nom, width=24).grid(
+            row=0, column=1, sticky="ew", padx=(8, 0))
+        ttk.Label(form, text=self._texte("stack.mots")).grid(row=1, column=0, sticky="w",
+                                                             pady=(6, 0))
+        ttk.Entry(form, textvariable=self.var_stack_mots).grid(
+            row=1, column=1, sticky="ew", padx=(8, 0), pady=(6, 0))
+
+        actions = ttk.Frame(form)
+        actions.grid(row=2, column=0, columnspan=2, sticky="w", pady=(8, 0))
+        ttk.Button(actions, text=self._texte("stack.enregistrer"),
+                   command=self._stack_enregistrer).pack(side="left")
+        ttk.Button(actions, text=self._texte("stack.supprimer"),
+                   command=self._stack_supprimer).pack(side="left", padx=8)
+        ttk.Button(actions, text=self._texte("stack.reinitialiser"),
+                   command=self._stack_reinitialiser).pack(side="left")
+        ttk.Label(form, text=self._texte("stack.aide"), foreground="#555").grid(
+            row=3, column=0, columnspan=2, sticky="w", pady=(6, 0))
 
         barre = ttk.Frame(page)
-        barre.pack(side="bottom", fill="x", pady=(16, 0))
+        barre.grid(row=4, column=0, sticky="ew", pady=(10, 0))
         ttk.Button(barre, text=self._texte("wizard.precedent"),
                    command=self.page_courriel).pack(side="left")
         ttk.Button(barre, text=self._texte("wizard.suivant"),
                    command=self.page_planification).pack(side="right")
 
-    def _remplir_stack(self) -> None:
-        for item in self.arbre.get_children():
-            self.arbre.delete(item)
+    def _charger_stack(self) -> None:
+        """Charge la stack à éditer : celle enregistrée, sinon celle du moteur."""
         stack = self.perimetre.get("stack") or {}
         if not stack:
             try:
@@ -316,11 +355,58 @@ class Application:
                 # Une liste vide sans explication est un bug qu'on a déjà livré une fois :
                 # le moteur ne s'importait pas dans l'exe. Maintenant ça se voit.
                 message = f"Stack par defaut indisponible : {type(exc).__name__}: {exc}"
+                self.stack = {}
                 self.arbre.insert("", "end", text="!", values=(message,))
                 logging_setup.journaliser(paths.chemin_journal()).error(message)
                 return
-        for nom, mots in stack.items():
+        self.stack = {nom: list(mots) for nom, mots in stack.items()}
+        self._rafraichir_stack()
+
+    def _rafraichir_stack(self) -> None:
+        for item in self.arbre.get_children():
+            self.arbre.delete(item)
+        for nom, mots in self.stack.items():
             self.arbre.insert("", "end", text=nom, values=(", ".join(mots),))
+        self.perimetre["stack"] = {nom: list(mots) for nom, mots in self.stack.items()}
+
+    def _stack_selection(self, _event=None) -> None:
+        selection = self.arbre.selection()
+        if not selection:
+            return
+        self.var_stack_nom.set(self.arbre.item(selection[0], "text"))
+        self.var_stack_mots.set(self.arbre.item(selection[0], "values")[0])
+
+    def _stack_enregistrer(self) -> None:
+        nom = self.var_stack_nom.get().strip()
+        mots = [mot.strip() for mot in self.var_stack_mots.get().split(",") if mot.strip()]
+        if not nom or not mots:
+            messagebox.showerror(self._texte("commun.erreur"), self._texte("stack.aide"))
+            return
+        # Renommer une entrée sélectionnée ne doit pas laisser l'ancienne derrière elle.
+        selection = self.arbre.selection()
+        if selection:
+            ancien = self.arbre.item(selection[0], "text")
+            if ancien != nom:
+                self.stack.pop(ancien, None)
+        self.stack[nom] = mots
+        self._rafraichir_stack()
+
+    def _stack_supprimer(self) -> None:
+        selection = self.arbre.selection()
+        if not selection:
+            return
+        self.stack.pop(self.arbre.item(selection[0], "text"), None)
+        self.var_stack_nom.set("")
+        self.var_stack_mots.set("")
+        self._rafraichir_stack()
+
+    def _stack_reinitialiser(self) -> None:
+        try:
+            reference = engine.stack_par_defaut(self.dossier)
+        except Exception:               # noqa: BLE001 - moteur absent : on ne casse rien
+            reference = {}
+        self.stack = {nom: list(mots) for nom, mots in reference.items()}
+        self._rafraichir_stack()
 
     def page_planification(self) -> None:
         page = self._vider()

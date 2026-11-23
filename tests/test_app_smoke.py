@@ -73,6 +73,40 @@ def test_page_stack_remplie_avec_les_defauts_du_moteur(application):
     assert "Box" in noms
 
 
+def test_ajout_d_un_produit_a_la_stack(application):
+    application.page_stack()
+    application.var_stack_nom.set("GitLab")
+    application.var_stack_mots.set("gitlab, gitlab runner")
+    application._stack_enregistrer()
+
+    assert application.stack["GitLab"] == ["gitlab", "gitlab runner"]
+    assert "GitLab" in [application.arbre.item(l, "text")
+                        for l in application.arbre.get_children()]
+    assert application.perimetre["stack"]["GitLab"] == ["gitlab", "gitlab runner"]
+
+
+def test_suppression_d_un_produit(application):
+    application.page_stack()
+    avant = len(application.stack)
+    premiere = application.arbre.get_children()[0]
+    application.arbre.selection_set(premiere)
+    application._stack_supprimer()
+
+    assert len(application.stack) == avant - 1
+
+
+def test_retour_a_la_stack_d_exemple(application):
+    application.page_stack()
+    application.var_stack_nom.set("Produit perso")
+    application.var_stack_mots.set("produit perso")
+    application._stack_enregistrer()
+    assert "Produit perso" in application.stack
+
+    application._stack_reinitialiser()
+    assert "Produit perso" not in application.stack
+    assert "Box" in application.stack
+
+
 def test_adresse_outlook_refusee(application):
     application.page_courriel()
     application.var_expediteur.set("quelquun@outlook.com")
