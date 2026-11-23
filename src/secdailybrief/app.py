@@ -312,8 +312,13 @@ class Application:
         if not stack:
             try:
                 stack = engine.stack_par_defaut(self.dossier)
-            except Exception:                   # noqa: BLE001 - moteur absent : liste vide
-                stack = {}
+            except Exception as exc:    # noqa: BLE001 - on l'affiche, on ne l'avale plus
+                # Une liste vide sans explication est un bug qu'on a déjà livré une fois :
+                # le moteur ne s'importait pas dans l'exe. Maintenant ça se voit.
+                message = f"Stack par defaut indisponible : {type(exc).__name__}: {exc}"
+                self.arbre.insert("", "end", text="!", values=(message,))
+                logging_setup.journaliser(paths.chemin_journal()).error(message)
+                return
         for nom, mots in stack.items():
             self.arbre.insert("", "end", text=nom, values=(", ".join(mots),))
 

@@ -46,6 +46,22 @@ def verifier_moteur() -> Verification:
                         f"commit {attendu['commit']}, {attendu['octets']} octets, empreinte verifiee")
 
 
+def verifier_import_moteur() -> Verification:
+    """Le moteur s'importe-t-il vraiment ? Un fichier présent ne suffit pas.
+
+    C'est la vérification qui aurait attrapé le premier exe livré : `vendor/veille.py` était
+    là, son empreinte était bonne, et il était inimportable — `feedparser` manquait dans le
+    binaire. Le symptôme visible était une stack vide.
+    """
+    try:
+        module = engine.module()
+        produits = len(module.STACK_PRODUCTS)
+    except Exception as exc:      # noqa: BLE001 - l'exception est le résultat
+        return Verification("Moteur importable", ECHEC, f"{type(exc).__name__}: {exc}")
+    return Verification("Moteur importable", OK,
+                        f"{produits} produits, dependances presentes")
+
+
 def verifier_dossier(dossier: Path) -> Verification:
     try:
         paths.s_assurer_dossier()
@@ -119,6 +135,7 @@ def collecter(dossier: Path | None = None, *, reglages: dict | None = None,
     mot_de_passe = jetons.get("smtp_password", "")
     return [
         verifier_moteur(),
+        verifier_import_moteur(),
         verifier_dossier(dossier),
         verifier_configuration(reglages),
         verifier_secret(jetons),

@@ -18,6 +18,12 @@ if (-not (Test-Path $python)) {
 & $python tools\fetch_engine.py --verify
 if ($LASTEXITCODE -ne 0) { throw "Le moteur ne correspond pas au verrou." }
 
+# Le moteur est embarqué comme DONNÉE (--add-data), mais il est AUSSI déclaré comme module
+# caché, avec vendor\ dans les chemins d'analyse : PyInstaller lit alors ses imports
+# (feedparser, sqlite3, requests…) et embarque tout. Sans cela, l'analyse ne voyait que
+# l'application : le premier binaire livré démarrait avec un moteur inimportable —
+# « feedparser » manquait, puis « sqlite3 ». Une dépendance à la fois, c'est trois rebuilds.
+
 & $python -m PyInstaller `
     --noconfirm `
     --clean `
@@ -26,6 +32,9 @@ if ($LASTEXITCODE -ne 0) { throw "Le moteur ne correspond pas au verrou." }
     --workpath "work" `
     --distpath "dist" `
     --paths "src" `
+    --paths "vendor" `
+    --hidden-import "veille" `
+    --hidden-import "tzdata" `
     --icon "assets\SecDailyBrief.ico" `
     --version-file "build\version.txt" `
     --add-data "vendor;vendor" `

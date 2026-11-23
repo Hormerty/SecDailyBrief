@@ -33,6 +33,19 @@ def test_moteur_altere_est_signale(tmp_path, monkeypatch):
     assert "empreinte differente" in verification.detail
 
 
+def test_moteur_importable_signale_une_dependance_absente(monkeypatch):
+    """Le cas du premier binaire : fichier présent, empreinte bonne, import impossible."""
+    def echoue(*arguments, **options):
+        raise ModuleNotFoundError("No module named 'feedparser'")
+
+    monkeypatch.setattr(doctor.engine, "module", echoue)
+
+    verification = doctor.verifier_import_moteur()
+
+    assert verification.statut == doctor.ECHEC
+    assert "feedparser" in verification.detail
+
+
 def test_configuration_incomplete_signalee():
     verification = doctor.verifier_configuration({"email_user": "", "heure": "99:99"})
     assert verification.statut == doctor.ECHEC
