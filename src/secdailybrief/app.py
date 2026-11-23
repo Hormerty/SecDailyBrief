@@ -30,6 +30,20 @@ URL_MOT_DE_PASSE = "https://myaccount.google.com/apppasswords"
 URL_DEPOT = "https://github.com/Hormerty/Sec_Daily_report-"
 NBSP = "\u00a0"
 
+# Raccourcis proposés dans la liste des fuseaux. La liste complète fait six cents entrées :
+# un menu déroulant de cette taille est inutilisable. Le champ reste éditable, donc toute
+# zone IANA valide est acceptée — la liste est un confort, pas une limite.
+FUSEAUX_COURANTS = (
+    "Europe/Brussels", "Europe/Paris", "Europe/London", "Europe/Berlin", "Europe/Madrid",
+    "Europe/Rome", "Europe/Amsterdam", "Europe/Luxembourg", "Europe/Zurich", "Europe/Vienna",
+    "Europe/Lisbon", "Europe/Warsaw", "Europe/Prague", "Europe/Stockholm",
+    "Europe/Helsinki", "Europe/Athens", "Europe/Dublin", "Europe/Bucharest",
+    "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
+    "America/Sao_Paulo", "Africa/Casablanca", "Africa/Johannesburg", "Asia/Dubai",
+    "Asia/Kolkata", "Asia/Singapore", "Asia/Tokyo", "Australia/Sydney", "Pacific/Auckland",
+    "UTC",
+)
+
 
 def domaines_contactes() -> list[str]:
     """Domaines réellement présents dans le moteur épinglé, lus depuis le fichier.
@@ -442,8 +456,13 @@ class Application:
                                                                        sticky="w")
         ttk.Label(cadre, text=self._texte("planif.fuseau")).grid(row=2, column=0, sticky="w",
                                                                  pady=4)
-        ttk.Entry(cadre, textvariable=self.var_fuseau, width=32).grid(row=2, column=1,
-                                                                      sticky="w")
+        valeurs = sorted(set(FUSEAUX_COURANTS) | {self.var_fuseau.get() or ""})
+        self.fuseaux_proposes = [valeur for valeur in valeurs if valeur]
+        self.combo_fuseau = ttk.Combobox(cadre, textvariable=self.var_fuseau,
+                                         values=self.fuseaux_proposes, width=30)
+        self.combo_fuseau.grid(row=2, column=1, sticky="w")
+        ttk.Label(cadre, text=self._texte("planif.fuseau.aide"), foreground="#555").grid(
+            row=3, column=0, columnspan=2, sticky="w")
 
         barre = ttk.Frame(page)
         barre.pack(side="bottom", fill="x", pady=(16, 0))

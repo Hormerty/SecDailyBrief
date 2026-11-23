@@ -87,6 +87,15 @@ def test_page_stack_remplie_avec_les_defauts_du_moteur(application):
     assert "Box" in noms
 
 
+def test_fuseau_propose_dans_une_liste(application):
+    """Un champ vide sans liste ne laisse aucun moyen de choisir."""
+    application.page_planification()
+    assert application.var_fuseau.get() == "Europe/Brussels"
+    assert "Europe/Brussels" in application.fuseaux_proposes
+    # Éditable : la liste complète fait six cents entrées, elle ne peut pas y être.
+    assert str(application.combo_fuseau.cget("state")) != "readonly"
+
+
 def test_ajout_d_un_produit_a_la_stack(application):
     application.page_stack()
     application.var_stack_nom.set("GitLab")
