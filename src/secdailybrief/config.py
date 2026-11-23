@@ -34,6 +34,7 @@ DEFAUTS: dict = {
     "timezone": FUSEAU_PAR_DEFAUT,
     "window_hours": 27,
     "heure": "06:00",
+    "taille_texte": 10,
 }
 
 

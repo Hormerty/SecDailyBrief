@@ -21,6 +21,11 @@ dossier = Path(tempfile.mkdtemp(prefix="secdailybrief-shot-"))
 env = dict(os.environ, SECDailyBrief_DATA=str(dossier),
            PYTHONPATH=str(RACINE / "src"))
 
+# Permet de capturer le panneau plutôt que l'assistant, en préremplissant une configuration.
+graine = os.environ.get("CAPTURE_CONFIG")
+if graine:
+    (dossier / "config.json").write_text(graine, encoding="utf-8")
+
 user32 = ctypes.WinDLL("user32", use_last_error=True)
 gdi32 = ctypes.WinDLL("gdi32", use_last_error=True)
 

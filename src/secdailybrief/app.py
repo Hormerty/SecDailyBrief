@@ -15,11 +15,13 @@ import locale
 import re
 import threading
 import tkinter as tk
+import tkinter.font as tkfont
 import webbrowser
 from pathlib import Path
 from tkinter import messagebox, ttk
 
 from . import config as configuration
+from . import __version__ as version_actuelle
 from . import engine, i18n, logging_setup, mail, paths, runner, schedule, secrets
 
 TAILLE_MIN = (760, 540)
@@ -64,11 +66,14 @@ class Application:
         self.textes = i18n.textes(self.langue)
         self.mot_de_passe = self.jetons.get("smtp_password", "")
         self.brouillon = dict(self.reglages)
+        self.taille = int(self.reglages.get("taille_texte") or 10)
+        self._maj_verifiee = False
 
         self.racine.title(self.textes["app.titre"])
         self.racine.minsize(*TAILLE_MIN)
         self.racine.protocol("WM_DELETE_WINDOW", self.racine.destroy)
         self.racine.bind("<Escape>", lambda _event: self.racine.destroy())
+        self._appliquer_taille(self.taille)
 
         # Le pied est empilé AVANT la zone centrale : dans pack(), le premier arrivé reçoit
         # sa place. Empilé après, il se retrouve avec zéro pixel quand le centre s'étend —
@@ -87,6 +92,24 @@ class Application:
             self.page_langue()
 
     # --- utilitaires -------------------------------------------------------
+    def _titre(self, base: int) -> tuple[str, int, str]:
+        """Taille d'un titre, relative à la taille de texte choisie par l'utilisateur."""
+        return ("Segoe UI", base + self.taille - 10, "bold")
+
+    def _appliquer_taille(self, taille: int) -> None:
+        """Agrandit toute l'interface, pas seulement les titres.
+
+        ttk lit ses polices dans des polices nommées de Tk : les redimensionner est le seul
+        moyen d'agir sur chaque widget à la fois, y compris ceux qui n'existent pas encore.
+        """
+        self.taille = taille
+        for nom in ("TkDefaultFont", "TkTextFont", "TkHeadingFont", "TkMenuFont",
+                    "TkCaptionFont", "TkSmallCaptionFont", "TkTooltipFont"):
+            try:
+                tkfont.nametofont(nom).configure(size=taille)
+            except tk.TclError:     # police absente de cette installation
+                continue
+
     def _vider(self) -> ttk.Frame:
         for enfant in self.corps.winfo_children():
             enfant.destroy()
@@ -107,7 +130,7 @@ class Application:
         page.pack(fill="both", expand=True)
 
         ttk.Label(page, text=self._texte("wizard.bienvenue"),
-                  font=("Segoe UI", 16, "bold")).pack(anchor="w")
+                  font=self._titre(16)).pack(anchor="w")
         ttk.Label(page, text=self._texte("wizard.intro"), wraplength=680,
                   justify="left").pack(anchor="w", pady=(8, 16))
         ttk.Label(page, text=self._texte("wizard.langue")).pack(anchor="w")
@@ -135,7 +158,7 @@ class Application:
         page.pack(fill="both", expand=True)
 
         ttk.Label(page, text=self._texte("consent.titre"),
-                  font=("Segoe UI", 14, "bold")).pack(anchor="w")
+                  font=self._titre(14)).pack(anchor="w")
         ttk.Label(page, text=self._texte("consent.texte"), wraplength=690,
                   justify="left").pack(anchor="w", pady=(8, 8))
         ttk.Label(page, text=self._texte("consent.pause"), wraplength=690,
@@ -168,7 +191,7 @@ class Application:
         page.pack(fill="both", expand=True)
 
         ttk.Label(page, text=self._texte("courriel.titre"),
-                  font=("Segoe UI", 14, "bold")).pack(anchor="w")
+                  font=self._titre(14)).pack(anchor="w")
 
         cadre = ttk.Frame(page)
         cadre.pack(fill="x", pady=(12, 0))
@@ -260,7 +283,7 @@ class Application:
         page.pack(fill="both", expand=True)
 
         ttk.Label(page, text=self._texte("stack.titre"),
-                  font=("Segoe UI", 14, "bold")).pack(anchor="w")
+                  font=self._titre(14)).pack(anchor="w")
         ttk.Label(page, text=self._texte("stack.explication"), wraplength=690,
                   justify="left").pack(anchor="w", pady=(6, 10))
 
@@ -299,7 +322,7 @@ class Application:
         page.pack(fill="both", expand=True)
 
         ttk.Label(page, text=self._texte("planif.titre"),
-                  font=("Segoe UI", 14, "bold")).pack(anchor="w")
+                  font=self._titre(14)).pack(anchor="w")
 
         cadre = ttk.Frame(page)
         cadre.pack(fill="x", pady=(12, 0))
@@ -369,7 +392,12 @@ class Application:
         page.pack(fill="both", expand=True)
 
         ttk.Label(page, text=self._texte("app.titre"),
-                  font=("Segoe UI", 16, "bold")).pack(anchor="w")
+                  font=self._titre(16)).pack(anchor="w")
+
+        # Bandeau de mise à jour : rempli seulement si une version plus récente existe.
+        self.var_maj = tk.StringVar(value="")
+        self.lbl_maj = ttk.Label(page, textvariable=self.var_maj, foreground="#8a6d3b")
+        self.lbl_maj.pack(anchor="w")
         self.var_statut = tk.StringVar(value=self._texte("panneau.jamais"))
         ttk.Label(page, textvariable=self.var_statut).pack(anchor="w", pady=(4, 2))
 
@@ -404,6 +432,18 @@ class Application:
         ttk.Button(bas, text=self._texte("about.titre"),
                    command=self._ouvrir_about).pack(side="left")
 
+        # Taille de texte : agrandir tout, pas seulement les titres — c'est un réglage
+        # d'accessibilité, pas une coquetterie.
+        ttk.Label(bas, text=self._texte("panneau.taille")).pack(side="left", padx=(16, 4))
+        choix_taille = ttk.Combobox(bas, values=["9", "10", "12", "14"], width=4,
+                                    state="readonly")
+        choix_taille.set(str(self.taille))
+        choix_taille.pack(side="left")
+        choix_taille.bind("<<ComboboxSelected>>",
+                          lambda _e: self._changer_taille(int(choix_taille.get())))
+
+        self._verifier_mise_a_jour()
+
     def _afficher_prochaine(self) -> None:
         try:
             prochaine = schedule.prochaine_execution()
@@ -414,6 +454,28 @@ class Application:
 
     def _afficher_statut(self, texte: str) -> None:
         self.var_statut.set(texte)
+
+    def _changer_taille(self, taille: int) -> None:
+        self.reglages["taille_texte"] = taille
+        configuration.enregistrer(self.dossier, self.reglages)
+        self._appliquer_taille(taille)
+        self.afficher_panneau()
+
+    def _verifier_mise_a_jour(self) -> None:
+        """Une seule vérification par session : la fenêtre est reconstruite à chaque page."""
+        if self._maj_verifiee:
+            return
+        self._maj_verifiee = True
+
+        def travail() -> None:
+            from . import updates
+
+            derniere = updates.derniere_publiee()
+            if derniere and updates.plus_recente(version_actuelle, derniere):
+                self.racine.after(0, lambda: self.var_maj.set(
+                    self._texte("panneau.maj").format(version=derniere)))
+
+        threading.Thread(target=travail, daemon=True).start()
 
     def _lancer(self, mode: str, preflight: bool = True) -> None:
         if not self.mot_de_passe:
