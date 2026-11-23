@@ -15,8 +15,18 @@ from . import engine, logging_setup, paths, runner, secrets
 
 
 def executer_moteur() -> int:
-    """Exécute le moteur dans le processus courant (chemin de l'exécutable figé)."""
-    return engine.module().main()
+    """Exécute le moteur dans le processus courant (chemin de l'exécutable figé).
+
+    Toute exception est journalisée et transformée en code de sortie : sans ça, une erreur
+    du moteur fait apparaître la boîte « Unhandled exception in script » de PyInstaller, qui
+    ne dit rien d'utile à l'utilisateur et ferme l'application.
+    """
+    journal = logging_setup.journaliser(paths.chemin_journal())
+    try:
+        return engine.module().main()
+    except Exception as exc:      # noqa: BLE001 - on rapporte, on ne laisse pas mourir
+        journal.exception("Echec du moteur : %s", exc)
+        return 1
 
 
 def _executer(mode: str) -> int:

@@ -162,7 +162,13 @@ def executer(config: dict, mot_de_passe: str, journal: logging.Logger, *,
             if not ligne:
                 continue
             lignes.append(ligne)
-            journal.log(_niveau(ligne), "%s", ligne)
+            # Le moteur préfixe déjà ses lignes d'un niveau : le garder donnerait
+            # « INFO INFO score 4 … ». On le retire, le journal remet le sien.
+            tete, _, reste = ligne.partition(" ")
+            if tete.upper() in _NIVEAUX:
+                journal.log(_NIVEAUX[tete.upper()], "%s", reste.lstrip())
+            else:
+                journal.log(_niveau(ligne), "%s", ligne)
 
         code = processus.wait()
         duree = time.monotonic() - debut

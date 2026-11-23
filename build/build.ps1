@@ -41,6 +41,7 @@ if ($LASTEXITCODE -ne 0) { throw "Le moteur ne correspond pas au verrou." }
     --paths "vendor" `
     --hidden-import "veille" `
     --hidden-import "tzdata" `
+    --collect-data "certifi" `
     --icon "assets\SecDailyBrief.ico" `
     --version-file "build\version.txt" `
     --add-data "vendor;vendor" `

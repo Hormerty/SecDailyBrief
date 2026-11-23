@@ -62,6 +62,24 @@ def verifier_import_moteur() -> Verification:
                         f"{produits} produits, dependances presentes")
 
 
+def verifier_certificats() -> Verification:
+    """Les racines TLS sont-elles dans le binaire ?
+
+    PyInstaller embarque le paquet `certifi` mais pas toujours son `cacert.pem` : le
+    dossier existe, vide, et la première requête HTTPS échoue avec « Could not find a
+    suitable TLS CA certificate bundle ». C'est arrivé au premier vrai rapport.
+    """
+    import certifi
+
+    chemin = Path(certifi.where())
+    if not chemin.exists():
+        return Verification("Certificats TLS", ECHEC, f"cacert.pem introuvable : {chemin}")
+    taille = chemin.stat().st_size
+    if taille < 10_000:
+        return Verification("Certificats TLS", ECHEC, f"cacert.pem suspect : {taille} octets")
+    return Verification("Certificats TLS", OK, f"{chemin.name}, {taille} octets")
+
+
 def verifier_dossier(dossier: Path) -> Verification:
     try:
         paths.s_assurer_dossier()
@@ -136,6 +154,7 @@ def collecter(dossier: Path | None = None, *, reglages: dict | None = None,
     return [
         verifier_moteur(),
         verifier_import_moteur(),
+        verifier_certificats(),
         verifier_dossier(dossier),
         verifier_configuration(reglages),
         verifier_secret(jetons),

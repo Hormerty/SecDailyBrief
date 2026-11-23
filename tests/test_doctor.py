@@ -46,6 +46,21 @@ def test_moteur_importable_signale_une_dependance_absente(monkeypatch):
     assert "feedparser" in verification.detail
 
 
+def test_certificats_tls_verifies(monkeypatch, tmp_path):
+    """Le dossier vide : PyInstaller embarque certifi sans son cacert.pem."""
+    vide = tmp_path / "cacert.pem"
+    vide.write_text("", encoding="utf-8")
+    monkeypatch.setattr(doctor, "Path", lambda _chemin: vide)
+    import certifi
+
+    monkeypatch.setattr(certifi, "where", lambda: str(vide))
+
+    verification = doctor.verifier_certificats()
+
+    assert verification.statut == doctor.ECHEC
+    assert "introuvable" in verification.detail or "suspect" in verification.detail
+
+
 def test_configuration_incomplete_signalee():
     verification = doctor.verifier_configuration({"email_user": "", "heure": "99:99"})
     assert verification.statut == doctor.ECHEC
