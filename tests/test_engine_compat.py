@@ -55,6 +55,17 @@ def test_injection_de_la_stack_fonctionne():
         veille.RE_STACK.update(regex)
 
 
+def test_perimetre_editable_disponible():
+    """L'application n'injecte plus la stack à la main : elle écrit config.json.
+
+    Ce chemin remplace le monkey-patch de STACK_PRODUCTS / RE_STACK, qui dépendait de noms
+    internes. S'il disparaît, la configuration de l'utilisateur ne s'applique plus du tout.
+    """
+    for nom in ("charger_configuration", "valider_configuration", "ConfigurationError"):
+        assert hasattr(veille, nom), f"le moteur n'expose plus {nom}"
+    assert isinstance(veille.CONFIG_FILE, str) and veille.CONFIG_FILE
+
+
 def test_fuseau_resolu_et_jamais_utc():
     """Sur Windows sans tzdata, le moteur retombe silencieusement sur UTC."""
     assert ZoneInfo("Europe/Brussels").key == "Europe/Brussels"
