@@ -65,6 +65,20 @@ def test_parcours_des_pages_ne_leve_pas(application):
     application.afficher_panneau()
 
 
+def test_le_consentement_conditionne_le_bouton(application):
+    """Une case à cocher qui ne bloque rien ne demande rien."""
+    application.page_consentement()
+    assert application.bouton_consentement.instate(["disabled"])
+
+    application.consentement.set(True)
+    application._maj_bouton_consentement()
+    assert application.bouton_consentement.instate(["!disabled"])
+
+    application.consentement.set(False)
+    application._maj_bouton_consentement()
+    assert application.bouton_consentement.instate(["disabled"])
+
+
 def test_page_stack_remplie_avec_les_defauts_du_moteur(application):
     application.page_stack()
     lignes = application.arbre.get_children()

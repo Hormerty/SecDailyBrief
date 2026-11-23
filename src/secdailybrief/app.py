@@ -184,14 +184,22 @@ class Application:
 
         self.consentement = tk.BooleanVar(value=False)
         ttk.Checkbutton(page, text=self._texte("consent.accepte"),
-                        variable=self.consentement).pack(anchor="w", pady=(8, 0))
+                        variable=self.consentement,
+                        command=self._maj_bouton_consentement).pack(anchor="w", pady=(8, 0))
 
         barre = ttk.Frame(page)
         barre.pack(side="bottom", fill="x", pady=(16, 0))
         ttk.Button(barre, text=self._texte("wizard.precedent"),
                    command=self.page_langue).pack(side="left")
-        ttk.Button(barre, text=self._texte("wizard.suivant"),
-                   command=self.page_courriel).pack(side="right")
+        # Désactivé tant que la case n'est pas cochée : une case qui ne conditionne rien
+        # ne demande rien, et laisserait croire à un consentement qui n'a pas eu lieu.
+        self.bouton_consentement = ttk.Button(barre, text=self._texte("wizard.suivant"),
+                                              command=self.page_courriel, state="disabled")
+        self.bouton_consentement.pack(side="right")
+
+    def _maj_bouton_consentement(self) -> None:
+        self.bouton_consentement.configure(
+            state="normal" if self.consentement.get() else "disabled")
 
     def page_courriel(self) -> None:
         page = self._vider()

@@ -43,6 +43,17 @@ if ($LASTEXITCODE -ne 0) { throw "Le moteur ne correspond pas au verrou." }
 
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller a échoué." }
 
+# Garde-fou : une archive produite à partir d'un dossier incomplet est indétectable pour
+# qui la télécharge. C'est arrivé une fois — l'application tournait depuis dist\, PyInstaller
+# a vidé le dossier sans pouvoir le réécrire, et le ZIP s'est fait à partir des restes.
+$exe = Join-Path $racine "dist\SecDailyBrief\SecDailyBrief.exe"
+if (-not (Test-Path $exe)) {
+    throw "PyInstaller n'a pas produit dist\SecDailyBrief\SecDailyBrief.exe (dossier incomplet ou verrouille)."
+}
+if ((Get-Item $exe).Length -lt 1MB) {
+    throw "Executable suspect : $((Get-Item $exe).Length) octets."
+}
+
 # Assemblage de l'archive : le binaire, mais aussi ce qui permet de désinstaller et de
 # comprendre ce qu'on vient d'installer.
 $sortie = Join-Path $racine "dist\SecDailyBrief"
@@ -51,7 +62,11 @@ Copy-Item "build\uninstall.ps1" $sortie -Force
 Copy-Item "LICENSE" $sortie -Force
 
 $archive = Join-Path $racine "dist\SecDailyBrief-1.0.0-win64.zip"
-if (Test-Path $archive) { Remove-Item $archive -Force }
-Compress-Archive -Path "$sortie\*" -DestinationPath $archive
+if (Test-Path $archive) {
+    try { Remove-Item $archive -Force -ErrorAction Stop }
+    catch { throw "Archive verrouillee, fermez-la avant de reconstruire : $archive" }
+}
+Compress-Archive -Path "$sortie\*" -DestinationPath $archive -ErrorAction Stop
+if (-not (Test-Path $archive)) { throw "L'archive n'a pas ete creee." }
 Write-Host "Archive : dist\SecDailyBrief-1.0.0-win64.zip"
 Write-Host "Construit : dist\SecDailyBrief\SecDailyBrief.exe"
