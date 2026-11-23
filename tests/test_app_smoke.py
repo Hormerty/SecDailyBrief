@@ -183,6 +183,25 @@ def test_pendant_un_lancement_les_boutons_sont_desactives(application, monkeypat
     assert all(bouton.instate(["!disabled"]) for bouton in application.boutons_action)
 
 
+def test_la_tache_planifiee_lance_l_application_pas_le_moteur(application, monkeypatch):
+    """`--moteur` court-circuite pré-vol, verrou, journal et dossier de travail : la tâche
+    doit appeler `--run`. La première tâche créée appelait `--moteur`."""
+    xmls = []
+    monkeypatch.setattr(app.schedule, "installer", lambda xml, nom=None: xmls.append(xml))
+    application.page_planification()
+    application.var_heure.set("06:00")
+    application.var_fenetre.set("27")
+    application.var_fuseau.set("Europe/Brussels")
+
+    application._programmer()
+
+    assert xmls, "aucune tâche n'a été installée"
+    # En développement la commande est « python -m secdailybrief --run », dans l'exe figé
+    # c'est « SecDailyBrief.exe --run » : l'invariant est --run, jamais --moteur.
+    assert "--run" in xmls[0]
+    assert "--moteur" not in xmls[0]
+
+
 def test_le_panneau_donne_acces_aux_reglages(application):
     """Sans cette porte, une configuration déjà enregistrée n'était plus modifiable."""
     application.afficher_panneau()

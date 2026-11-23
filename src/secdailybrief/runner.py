@@ -115,6 +115,19 @@ def commande_moteur(mode: str = "run") -> list[str]:
     return base + MODES.get(mode, [])
 
 
+def commande_application(mode: str = "run") -> list[str]:
+    """Comment lancer l'application elle-même, et non le moteur nu.
+
+    C'est ce que la tâche planifiée doit exécuter : passer par `--run` garantit le pré-vol
+    réseau, le verrou mono-instance, le journal et le bon répertoire de travail. Appeler
+    `--moteur` court-circuite tout cela — la première tâche créée le faisait, et le rapport
+    de 06:00 serait parti dans le vide.
+    """
+    if getattr(sys, "frozen", False):
+        return [sys.executable, f"--{mode}"]
+    return [sys.executable, "-m", "secdailybrief", f"--{mode}"]
+
+
 _TRACEBACK = "Traceback (most recent call last):"
 
 

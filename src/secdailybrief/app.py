@@ -515,10 +515,11 @@ class Application:
     def _programmer(self) -> None:
         """Enregistre la tâche quotidienne ; un échec ne doit pas empêcher d'utiliser l'app."""
         try:
-            commande = [runner.commande_moteur("run")[0]]
-            arguments = " ".join(runner.commande_moteur("run")[1:])
+            # L'application, pas le moteur : `--run` passe par le pré-vol, le verrou, le
+            # journal et le dossier de données. `--moteur` sauterait tout cela.
+            commande = runner.commande_application("run")
             xml = schedule.construire_xml(Path(commande[0]), heure=self.brouillon["heure"],
-                                          arguments=arguments)
+                                          arguments=" ".join(commande[1:]))
             schedule.installer(xml)
         except Exception:                       # noqa: BLE001 - pas de tâche, pas de drame
             pass
