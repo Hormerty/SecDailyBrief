@@ -1,0 +1,7 @@
+# Les fins de ligne ne doivent pas dépendre du poste : le moteur est vérifié par
+# empreinte SHA-256, donc une conversion CRLF le ferait échouer à la vérification.
+.gitattributes    text eol=lf
+*.py              text eol=lf
+*.md              text eol=lf
+*.txt             text eol=lf
+vendor/veille.py  -text

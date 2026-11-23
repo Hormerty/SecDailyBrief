@@ -1,0 +1,17 @@
+# Environnement de développement
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Sorties de build (PyInstaller)
+build/
+dist/
+*.spec
+
+# Données d'exécution en mode portable
+data/
+
+# Aperçus produits en développement
+preview.html
+preview.txt

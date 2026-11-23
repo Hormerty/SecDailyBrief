@@ -1,0 +1,5 @@
+requests==2.34.2
+feedparser==6.0.14
+# La base des fuseaux n'existe pas sous Windows : sans ce paquet, zoneinfo retombe
+# silencieusement sur UTC et les dates du rapport glissent d'une heure.
+tzdata
