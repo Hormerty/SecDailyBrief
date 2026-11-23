@@ -31,6 +31,21 @@ python -m venv .venv
 .venv\Scripts\python.exe -m pytest -q
 ```
 
+### Encodage
+
+Tout est lu et écrit en UTF-8 explicite. Deux pièges rencontrés pour de vrai, et les
+parades correspondantes :
+
+- **Windows PowerShell 5.1** — celui que Windows livre encore — lit et écrit en ANSI par
+  défaut. Un aller-retour `Get-Content` / `Set-Content` sur un fichier UTF-8 le corrompt
+  (`é` devient `Ã©`). On ne réécrit pas un fichier source avec ce shell : on utilise un
+  éditeur, ou `-Encoding UTF8` explicitement.
+- **Le BOM** — Notepad et `Out-File` en produisent un, et `json` le refuse. Le fichier de
+  configuration est donc lu en `utf-8-sig`, qui l'accepte comme son absence.
+
+Côté code, chaque `read_text` / `write_text` porte son encodage, et les sorties console
+passent par `PYTHONIOENCODING=utf-8` quand elles contiennent autre chose que de l'ASCII.
+
 ## Licence
 
 MIT — voir `LICENSE`.
