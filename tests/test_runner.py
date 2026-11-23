@@ -47,7 +47,8 @@ def test_environnement_porte_les_secrets_et_ecarte_le_shell(tmp_path, monkeypatc
     assert env["SMTP_HOST"] == "smtp.gmail.com", "la valeur du shell doit être écartée"
     assert env["EMAIL_USER"] == "bot@example.com"
     assert env["RECIPIENT_EMAIL"] == "dest@example.com"
-    assert env["CONFIG_FILE"] == str(tmp_path / "config.json")
+    assert env["CONFIG_FILE"] == str(tmp_path / "perimetre.json"), \
+        "le moteur reçoit le périmètre, pas les réglages de l'interface"
     assert env["NVD_API_KEY"] == "nvd-123"
     assert env["PYTHONUTF8"] == "1"
 

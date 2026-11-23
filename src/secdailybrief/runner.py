@@ -78,7 +78,7 @@ def environnement(config: dict, mot_de_passe: str, dossier: Path) -> dict[str, s
         "PYTHONUTF8": "1",
         "PYTHONIOENCODING": "utf-8",
         "TZ": config.get("timezone") or FUSEAU_PAR_DEFAUT,
-        "CONFIG_FILE": str(dossier / "config.json"),
+        "CONFIG_FILE": str(dossier / "perimetre.json"),
         "EMAIL_USER": config["email_user"],
         "RECIPIENT_EMAIL": config.get("recipient_email") or config["email_user"],
         "EMAIL_PASSWORD": mot_de_passe,

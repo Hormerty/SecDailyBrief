@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import base64
 import ctypes
+import json
 from ctypes import wintypes
 from pathlib import Path
 
@@ -90,3 +91,24 @@ def charger(chemin: Path) -> str | None:
 
 def effacer(chemin: Path) -> None:
     chemin.unlink(missing_ok=True)
+
+
+def enregistrer_jetons(chemin: Path, jetons: dict[str, str]) -> None:
+    """Chiffre tous les secrets ensemble : un mot de passe SMTP, des clés d'API, un jeton.
+
+    Un seul blob DPAPI, donc un seul fichier à sauvegarder, à déplacer ou à effacer — et
+    aucune clé en clair dans le JSON de configuration, qui reste lisible.
+    """
+    enregistrer(chemin, json.dumps(jetons, ensure_ascii=False))
+
+
+def charger_jetons(chemin: Path) -> dict[str, str]:
+    """Relit le dictionnaire de secrets ; {} s'il n'y en a pas encore."""
+    texte = charger(chemin)
+    if not texte:
+        return {}
+    try:
+        donnees = json.loads(texte)
+    except json.JSONDecodeError:
+        return {}
+    return {cle: valeur for cle, valeur in donnees.items() if isinstance(valeur, str)}
