@@ -151,6 +151,23 @@ def test_terminer_enregistre_le_mot_de_passe_et_rafraichit_le_diagnostic(applica
     assert application.jetons["smtp_password"] == "abcd efgh ijkl mnop"
 
 
+def test_le_panneau_donne_acces_aux_reglages(application):
+    """Sans cette porte, une configuration déjà enregistrée n'était plus modifiable."""
+    application.afficher_panneau()
+    textes = []
+
+    def parcourir(widget):
+        for enfant in widget.winfo_children():
+            try:
+                textes.append(str(enfant.cget("text")))
+            except Exception:       # noqa: BLE001 - tous les widgets n'ont pas de texte
+                pass
+            parcourir(enfant)
+
+    parcourir(application.corps)
+    assert application._texte("panneau.reglages") in textes
+
+
 def test_adresse_outlook_refusee(application):
     application.page_courriel()
     application.var_expediteur.set("quelquun@outlook.com")

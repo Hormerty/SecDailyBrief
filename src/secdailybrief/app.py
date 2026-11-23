@@ -568,6 +568,11 @@ class Application:
                    command=self._effacer_donnees).pack(side="right")
         ttk.Button(bas, text=self._texte("about.titre"),
                    command=self._ouvrir_about).pack(side="left")
+        # Retour dans l'assistant : sans cette porte, changer de mot de passe ou d'adresse
+        # était impossible une fois la configuration enregistrée — le panneau n'offrait
+        # rien, et l'assistant ne s'affiche plus quand une adresse existe déjà.
+        ttk.Button(bas, text=self._texte("panneau.reglages"),
+                   command=self.page_courriel).pack(side="left", padx=(8, 0))
 
         # Taille de texte : agrandir tout, pas seulement les titres — c'est un réglage
         # d'accessibilité, pas une coquetterie.
