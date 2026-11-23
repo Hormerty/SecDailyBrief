@@ -31,6 +31,20 @@ python -m venv .venv
 .venv\Scripts\python.exe -m pytest -q
 ```
 
+### Empaqueter
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File build\build.ps1
+```
+
+Le script vérifie d'abord l'empreinte du moteur — un binaire qui embarquerait un moteur
+altéré serait indétectable une fois livré — puis produit `dist\SecDailyBrief\` et
+`dist\SecDailyBrief-1.0.0-win64.zip`. L'archive contient l'exécutable, `README.txt`,
+`uninstall.ps1` et `LICENSE`.
+
+L'exécutable n'est pas signé : Windows affichera « Windows a protégé votre PC » au premier
+lancement. C'est assumé, et documenté dans le `README.txt` de l'archive.
+
 ### Encodage
 
 Tout est lu et écrit en UTF-8 explicite. Deux pièges rencontrés pour de vrai, et les

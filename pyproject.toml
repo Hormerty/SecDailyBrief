@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "secdailybrief"
+version = "1.0.0"
+description = "Daily security brief by e-mail, built for your own stack"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Hormerty" }]
+dependencies = [
+    "requests==2.34.2",
+    "feedparser==6.0.14",
+    "tzdata",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1", "pyinstaller"]
+
+[project.gui-scripts]
+SecDailyBrief = "secdailybrief.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

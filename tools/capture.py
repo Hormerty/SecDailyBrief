@@ -8,6 +8,7 @@ from __future__ import annotations
 import ctypes
 import os
 import subprocess
+import sys
 import tempfile
 import time
 from ctypes import wintypes
@@ -77,9 +78,12 @@ def capturer_fenetre(hwnd: int) -> Image.Image:
     return image.convert("RGB")
 
 def main() -> int:
-    python_application = RACINE / ".venv" / "Scripts" / "python.exe"
-    processus = subprocess.Popen([str(python_application), "-m", "secdailybrief"],
-                                 cwd=str(RACINE), env=env)
+    # Sans argument : l'application en développement. Avec un chemin : l'exécutable figé.
+    if len(sys.argv) > 1:
+        commande = [sys.argv[1]]
+    else:
+        commande = [str(RACINE / ".venv" / "Scripts" / "python.exe"), "-m", "secdailybrief"]
+    processus = subprocess.Popen(commande, cwd=str(RACINE), env=env)
     try:
         hwnd = None
         for _ in range(40):

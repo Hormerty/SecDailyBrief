@@ -3,9 +3,11 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+*.egg-info/
 
-# Sorties de build (PyInstaller)
-build/
+# Sorties de build (PyInstaller). Le dossier build\ est versionné : il porte le script et
+# les propriétés du fichier .exe ; work\ et dist\ sont des sorties jetables.
+work/
 dist/
 *.spec
 
