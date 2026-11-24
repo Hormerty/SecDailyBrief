@@ -227,6 +227,35 @@ def test_le_consentement_est_memorise_et_ne_bloque_plus_au_retour(application, m
     assert application.bouton_consentement.instate(["!disabled"])
 
 
+def test_changer_de_langue_change_les_boutons_du_panneau(application):
+    """Le panneau est reconstruit à chaque affichage : les libellés doivent suivre."""
+    application.page_courriel()
+    application._basculer_langue("nl")
+    application.afficher_panneau()
+
+    assert application._texte("panneau.lancer") == "Nu uitvoeren"
+    libelles = []
+
+    def parcourir(widget):
+        for enfant in widget.winfo_children():
+            try:
+                libelles.append(str(enfant.cget("text")))
+            except Exception:       # noqa: BLE001 - tous les widgets n'ont pas de texte
+                pass
+            parcourir(enfant)
+
+    parcourir(application.corps)
+    assert "Nu uitvoeren" in libelles
+    assert "Lancer maintenant" not in libelles
+
+
+def test_les_trois_langues_traduisent_les_memes_boutons(application):
+    for code, attendu in (("fr", "Lancer maintenant"), ("en", "Run now"),
+                          ("nl", "Nu uitvoeren")):
+        application._basculer_langue(code)
+        assert application._texte("panneau.lancer") == attendu
+
+
 def test_le_panneau_donne_acces_aux_reglages(application):
     """Sans cette porte, une configuration déjà enregistrée n'était plus modifiable."""
     application.afficher_panneau()

@@ -606,9 +606,7 @@ class Application:
         # rien, et l'assistant ne s'affiche plus quand une adresse existe déjà.
         ttk.Button(bas, text=self._texte("panneau.reglages"),
                    command=self.page_courriel).pack(side="left", padx=(8, 0))
-        # Le don se distingue sans crier : une graisse, pas une couleur criarde.
-        ttk.Style(self.racine).configure("Don.TButton", font=self._titre(10))
-        ttk.Button(bas, text=self._texte("panneau.don"), style="Don.TButton",
+        ttk.Button(bas, text=self._texte("panneau.don"),
                    command=self._ouvrir_don).pack(side="left", padx=(8, 0))
 
         cadre, contenu = self._carte(page)

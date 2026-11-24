@@ -49,21 +49,22 @@ class BITMAPINFO(ctypes.Structure):
 
 
 def capturer_fenetre(hwnd: int) -> Image.Image:
-    rect = RECT()
-    # GetWindowRect, pas GetClientRect : PrintWindow dessine la fenêtre entière, barre de
-    # titre comprise. Un bitmap à la taille du client rogne le bas — et le pied de fenêtre
-    # est exactement là.
-    user32.GetWindowRect(ctypes.c_void_p(hwnd), ctypes.byref(rect))
-    largeur, hauteur = rect.right - rect.left, rect.bottom - rect.top
+    # Zone client, pas rectangle de fenêtre : PrintWindow laisse en noir les pixels entre
+    # le cadre et le client, et la capture montrait une bande sombre à droite et en bas —
+    # que l'on prenait pour un défaut de l'interface.
+    client = RECT()
+    user32.GetClientRect(ctypes.c_void_p(hwnd), ctypes.byref(client))
+    largeur, hauteur = client.right - client.left, client.bottom - client.top
 
     dc_fenetre = user32.GetWindowDC(ctypes.c_void_p(hwnd))
     dc_memoire = gdi32.CreateCompatibleDC(dc_fenetre)
     bitmap = gdi32.CreateCompatibleBitmap(dc_fenetre, largeur, hauteur)
     gdi32.SelectObject(dc_memoire, bitmap)
 
-    # 2 = PW_RENDERFULLCONTENT, nécessaire pour les fenêtres composées (thème ttk).
-    if not user32.PrintWindow(ctypes.c_void_p(hwnd), dc_memoire, 2):
-        user32.PrintWindow(ctypes.c_void_p(hwnd), dc_memoire, 0)
+    # 1 = PW_CLIENTONLY, 2 = PW_RENDERFULLCONTENT. Le second sert de repli : certaines
+    # fenêtres composées refusent le premier.
+    if not user32.PrintWindow(ctypes.c_void_p(hwnd), dc_memoire, 1):
+        user32.PrintWindow(ctypes.c_void_p(hwnd), dc_memoire, 2)
 
     info = BITMAPINFO()
     info.bmiHeader.biSize = ctypes.sizeof(BITMAPINFOHEADER)
