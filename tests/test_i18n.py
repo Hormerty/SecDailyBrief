@@ -17,9 +17,10 @@ def test_langues_proposees_triees_et_completes():
 
 
 def test_langue_inconnue_retombe_sur_l_anglais():
-    # Une langue que l'interface ne parle pas, pas seulement une langue absente du PC.
-    assert i18n.apparier_langue_systeme("pt-BR") == "en"
-    assert i18n.apparier_langue_systeme("ja-JP") == "en"
+    # Code volontairement impossible : « pt » puis « hi » ont été ajoutés, et ce test a
+    # échoué deux fois parce qu'il prenait une vraie langue pour une langue absente.
+    assert i18n.apparier_langue_systeme("xx-XX") == "en"
+    assert i18n.apparier_langue_systeme("qq-QQ") == "en"
     assert i18n.apparier_langue_systeme(None) == "en"
 
 

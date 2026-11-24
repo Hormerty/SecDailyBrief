@@ -7,10 +7,10 @@ This Windows application drives the watch engine of the
 modifying it**: the engine is fetched at a pinned commit, its checksum is verified, and the
 configuration is injected from the outside.
 
-> **Version 1.3.0** — in two archives:
-> `SecDailyBrief-1.3.0-win64.zip` (data in the Windows profile) and
-> `SecDailyBrief-1.3.0-win64-portable.zip` (data beside the executable).
-> The interface speaks French, English, Dutch, German, Spanish and Italian.
+> **Version 1.4.0** — in two archives:
+> `SecDailyBrief-1.4.0-win64.zip` (data in the Windows profile) and
+> `SecDailyBrief-1.4.0-win64-portable.zip` (data beside the executable).
+> The interface speaks French, English, Dutch, German, Spanish, Italian, Portuguese, Hindi and Chinese.
 
 ## Installation
 

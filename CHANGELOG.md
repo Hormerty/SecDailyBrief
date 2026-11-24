@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.4.0 — 24 November 2026
+
+### Added
+
+- **Portuguese, Hindi and Mandarin Chinese.** The interface now speaks nine languages. The
+  Devanagari and CJK glyphs rely on the Windows font fallback, which was checked on captures
+  rather than assumed: both render without missing-glyph boxes, and the labels fit the
+  buttons.
+- Traditional Chinese is not distinguished from Simplified: a `zh-TW` system lands on the
+  Simplified strings. Adding a `zh-Hant` variant would be a separate dictionary.
+
+### Changed
+
+- The test that checks an unsupported language now uses a code that can never be added
+  (`xx-XX`). It had twice failed because it named a real language that later got translated.
+
 ## 1.3.0 — 24 November 2026
 
 ### Added
