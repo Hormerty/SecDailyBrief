@@ -92,6 +92,28 @@ and `CHANGELOG.md`.
 The script refuses to build if the three version declarations disagree — the package, the
 Windows properties of the `.exe` file, and `pyproject.toml`.
 
+### Versioning
+
+Three numbers, one rule each:
+
+| Bump | When | Command |
+|---|---|---|
+| **patch** — `1.4.0` → `1.4.1` | a fix, or added translations | `tools/bump_version.py patch` |
+| **minor** — `1.4.1` → `1.5.0` | a new visible capability | `tools/bump_version.py minor` |
+| **major** — `1.5.0` → `2.0.0` | a change that breaks existing data or configuration | `tools/bump_version.py major` |
+
+Language additions are patches, not minor releases: the interface gains a dictionary, the
+program does not change.
+
+```powershell
+.venv\Scripts\python.exe tools\bump_version.py patch --dry-run
+.venv\Scripts\python.exe tools\bump_version.py patch
+```
+
+The script writes the version in all four places that carry it — the package, `pyproject.toml`,
+the Windows properties of the executable, and the title of the archive README. Hand-editing
+those four is how 1.2.0 shipped with a README announcing 1.1.0.
+
 ### Continuous integration
 
 Two workflows live in `.github/workflows/`:
