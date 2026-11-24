@@ -15,6 +15,7 @@ import locale
 import os
 import re
 import threading
+import webbrowser
 import tkinter as tk
 import tkinter.font as tkfont
 import webbrowser
@@ -27,6 +28,7 @@ from . import engine, i18n, logging_setup, mail, paths, runner, schedule, secret
 
 TAILLE_MIN = (760, 540)
 URL_MOT_DE_PASSE = "https://myaccount.google.com/apppasswords"
+URL_SOUTIEN = "https://www.buymeacoffee.com/bsky.scl"
 URL_DEPOT = "https://github.com/Hormerty/Sec_Daily_report-"
 NBSP = "\u00a0"
 
@@ -109,7 +111,9 @@ class Application:
         # Pour les captures d'écran et la documentation : ouvrir directement une page.
         # Sans cette variable, rien ne change pour un utilisateur.
         page = os.environ.get("SECDailyBrief_PAGE")
-        if page and hasattr(self, f"page_{page}"):
+        if page == "panneau":
+            self.afficher_panneau()
+        elif page and hasattr(self, f"page_{page}"):
             getattr(self, f"page_{page}")()
 
     # --- utilitaires -------------------------------------------------------
@@ -531,26 +535,98 @@ class Application:
             pass
 
     # --- panneau -----------------------------------------------------------
+    def _bandeau(self, parent, hauteur: int = 72) -> tk.Canvas:
+        """Bandeau dégradé, dessiné à la volée.
+
+        Aucune image livrée en dur : un dégradé dessiné suit la largeur de la fenêtre et
+        reste net à toutes les échelles, là où un PNG se floute en 125 %.
+        """
+        canevas = tk.Canvas(parent, height=hauteur, highlightthickness=0, bd=0,
+                            bg=self._fond())
+        canevas.pack(fill="x")
+
+        def dessiner(_event=None) -> None:
+            largeur = max(canevas.winfo_width(), 200)
+            canevas.delete("degrade")
+            for i in range(hauteur):
+                part = i / max(1, hauteur - 1)
+                couleur = "#%02x%02x%02x" % (int(240 - 30 * part),
+                                              int(242 - 28 * part),
+                                              int(245 - 26 * part))
+                canevas.create_rectangle(0, i, largeur, i + 1, fill=couleur, outline="",
+                                         tags="degrade")
+            canevas.create_rectangle(0, hauteur - 1, largeur, hauteur, fill="#b9bfc7",
+                                     outline="", tags="degrade")
+            canevas.delete("titre")
+            canevas.create_text(18, hauteur // 2 - 2, anchor="w",
+                                text=self._texte("app.titre"), fill="#1b1d21",
+                                font=self._titre(15), tags="titre")
+
+        canevas.bind("<Configure>", dessiner)
+        return canevas
+
+    def _carte(self, parent):
+        """Cadre en léger relief : un filet sombre, le fond du thème.
+
+        C'est la profondeur de Captvty sans sortir du thème natif — un fond blanc
+        jurerait avec les contrôles ttk, qui restent gris.
+        """
+        exterieur = tk.Frame(parent, bg="#c3c8cf", bd=0)
+        lisere = tk.Frame(exterieur, bg="#ffffff", bd=0, height=1)
+        lisere.pack(fill="x", padx=1, pady=(1, 0))
+        interieur = tk.Frame(exterieur, bg=self._fond(), bd=0)
+        interieur.pack(fill="both", expand=True, padx=1, pady=(0, 1))
+        return exterieur, interieur
+
+    def _fond(self) -> str:
+        try:
+            return str(self.racine.cget("background"))
+        except Exception:                       # noqa: BLE001 - valeur de repli
+            return "#f0f0f0"
+
     def afficher_panneau(self) -> None:
         page = self._vider()
         page.pack(fill="both", expand=True)
 
-        ttk.Label(page, text=self._texte("app.titre"),
-                  font=self._titre(16)).pack(anchor="w")
+        self._bandeau(page, hauteur=74)
 
         # Bandeau de mise à jour : rempli seulement si une version plus récente existe.
         self.var_maj = tk.StringVar(value="")
         self.lbl_maj = ttk.Label(page, textvariable=self.var_maj, foreground="#8a6d3b")
-        self.lbl_maj.pack(anchor="w")
+        self.lbl_maj.pack(anchor="w", padx=14, pady=(8, 0))
+
+        bas = ttk.Frame(page)
+        bas.pack(side="bottom", fill="x", padx=14, pady=(0, 10))
+        ttk.Button(bas, text=self._texte("panneau.effacer"),
+                   command=self._effacer_donnees).pack(side="right")
+        ttk.Button(bas, text=self._texte("about.titre"),
+                   command=self._ouvrir_about).pack(side="left")
+        # Retour dans l'assistant : sans cette porte, changer de mot de passe ou d'adresse
+        # était impossible une fois la configuration enregistrée — le panneau n'offrait
+        # rien, et l'assistant ne s'affiche plus quand une adresse existe déjà.
+        ttk.Button(bas, text=self._texte("panneau.reglages"),
+                   command=self.page_courriel).pack(side="left", padx=(8, 0))
+        # Le don se distingue sans crier : une graisse, pas une couleur criarde.
+        ttk.Style(self.racine).configure("Don.TButton", font=self._titre(10))
+        ttk.Button(bas, text=self._texte("panneau.don"), style="Don.TButton",
+                   command=self._ouvrir_don).pack(side="left", padx=(8, 0))
+
+        cadre, contenu = self._carte(page)
+        # La carte épouse son contenu : étirée sur toute la hauteur, elle laissait un
+        # grand vide gris dans un cadre, ce qui ressemble à un bug d'affichage.
+        cadre.pack(fill="x", padx=14, pady=10)
+
         self.var_statut = tk.StringVar(value=self._texte("panneau.jamais"))
-        ttk.Label(page, textvariable=self.var_statut).pack(anchor="w", pady=(4, 2))
+        ttk.Label(contenu, textvariable=self.var_statut,
+                  font=self._titre(11)).pack(anchor="w", padx=14, pady=(14, 2))
 
         self.var_prochaine = tk.StringVar(value="")
-        ttk.Label(page, textvariable=self.var_prochaine).pack(anchor="w", pady=(0, 12))
+        ttk.Label(contenu, textvariable=self.var_prochaine).pack(anchor="w", padx=14,
+                                                                 pady=(0, 10))
         self._afficher_prochaine()
 
-        boutons = ttk.Frame(page)
-        boutons.pack(anchor="w", pady=4)
+        boutons = ttk.Frame(contenu)
+        boutons.pack(anchor="w", padx=14)
         self.boutons_action = []
 
         def bouton(parent, texte, commande, ligne, colonne, marge=(8, 8)):
@@ -571,25 +647,13 @@ class Application:
 
         # Activité : une barre indéterminée et une phrase qui dit combien de temps ça prend.
         # Sans elles, « Lancer maintenant » ne montrait rien pendant quatre minutes.
-        self.cadre_activite = ttk.Frame(page)
+        self.cadre_activite = ttk.Frame(contenu)
         self.barre_activite = ttk.Progressbar(self.cadre_activite, mode="indeterminate",
                                               length=220)
         self.barre_activite.pack(side="left")
         self.var_activite = tk.StringVar(value="")
         ttk.Label(self.cadre_activite, textvariable=self.var_activite).pack(side="left",
                                                                            padx=(10, 0))
-
-        bas = ttk.Frame(page)
-        bas.pack(side="bottom", fill="x")
-        ttk.Button(bas, text=self._texte("panneau.effacer"),
-                   command=self._effacer_donnees).pack(side="right")
-        ttk.Button(bas, text=self._texte("about.titre"),
-                   command=self._ouvrir_about).pack(side="left")
-        # Retour dans l'assistant : sans cette porte, changer de mot de passe ou d'adresse
-        # était impossible une fois la configuration enregistrée — le panneau n'offrait
-        # rien, et l'assistant ne s'affiche plus quand une adresse existe déjà.
-        ttk.Button(bas, text=self._texte("panneau.reglages"),
-                   command=self.page_courriel).pack(side="left", padx=(8, 0))
 
         # Taille de texte : agrandir tout, pas seulement les titres — c'est un réglage
         # d'accessibilité, pas une coquetterie.
@@ -750,6 +814,10 @@ class Application:
     def _copier(self, texte: str) -> None:
         self.racine.clipboard_clear()
         self.racine.clipboard_append(texte)
+
+    def _ouvrir_don(self) -> None:
+        """Ouvre la page de soutien dans le navigateur — rien n'est transmis par l'app."""
+        webbrowser.open(URL_SOUTIEN)
 
     def _ouvrir_about(self) -> None:
         fenetre = tk.Toplevel(self.racine)
