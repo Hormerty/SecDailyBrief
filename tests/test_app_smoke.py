@@ -14,7 +14,7 @@ import tkinter as tk
 
 import pytest
 
-from secdailybrief import app, paths, secrets
+from secdailybrief import app, config, paths, secrets
 
 pied_attendu = "Developed by Hormerty · © 2026"
 
@@ -200,6 +200,31 @@ def test_la_tache_planifiee_lance_l_application_pas_le_moteur(application, monke
     # c'est « SecDailyBrief.exe --run » : l'invariant est --run, jamais --moteur.
     assert "--run" in xmls[0]
     assert "--moteur" not in xmls[0]
+
+
+def test_le_consentement_est_memorise_et_ne_bloque_plus_au_retour(application, monkeypatch):
+    """Revenir sur la page langue pour la changer ne doit pas redemander le consentement."""
+    monkeypatch.setattr(application, "_programmer", lambda: None)
+    application.page_courriel()
+    application.var_expediteur.set("bot@example.com")
+    application.var_destinataire.set("bot@example.com")
+    application.var_mot_de_passe.set("abcd efgh ijkl mnop")
+    application._courriel_suivant()
+    application.page_planification()
+    application.var_heure.set("06:00")
+    application.var_fenetre.set("27")
+    application.var_fuseau.set("Europe/Brussels")
+    application._terminer()
+
+    enregistre = config.charger(application.dossier)
+    assert enregistre["consentement"] is True
+
+    # Au retour sur la page, l'état enregistré pré-remplit la case : « Suivant » reste
+    # disponible, donc le chemin vers la page langue est praticable.
+    application.brouillon["consentement"] = enregistre["consentement"]
+    application.page_consentement()
+    assert application.consentement.get() is True
+    assert application.bouton_consentement.instate(["!disabled"])
 
 
 def test_le_panneau_donne_acces_aux_reglages(application):

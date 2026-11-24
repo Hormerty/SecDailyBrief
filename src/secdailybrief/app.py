@@ -196,7 +196,10 @@ class Application:
         ttk.Scrollbar(cadre, orient="vertical", command=liste.yview).pack(side="right",
                                                                          fill="y")
 
-        self.consentement = tk.BooleanVar(value=False)
+        # La case reprend l'état enregistré : revenir sur cette page pour changer la langue
+        # ne doit pas redemander un consentement déjà donné — sinon « Suivant » reste
+        # désactivé et l'utilisateur croit être bloqué.
+        self.consentement = tk.BooleanVar(value=bool(self.brouillon.get("consentement")))
         ttk.Checkbutton(page, text=self._texte("consent.accepte"),
                         variable=self.consentement,
                         command=self._maj_bouton_consentement).pack(anchor="w", pady=(8, 0))
@@ -207,8 +210,9 @@ class Application:
                    command=self.page_langue).pack(side="left")
         # Désactivé tant que la case n'est pas cochée : une case qui ne conditionne rien
         # ne demande rien, et laisserait croire à un consentement qui n'a pas eu lieu.
-        self.bouton_consentement = ttk.Button(barre, text=self._texte("wizard.suivant"),
-                                              command=self.page_courriel, state="disabled")
+        self.bouton_consentement = ttk.Button(
+            barre, text=self._texte("wizard.suivant"), command=self.page_courriel,
+            state="normal" if self.consentement.get() else "disabled")
         self.bouton_consentement.pack(side="right")
 
     def _maj_bouton_consentement(self) -> None:
@@ -490,6 +494,8 @@ class Application:
         self.brouillon["heure"] = self.var_heure.get().strip()
         self.brouillon["window_hours"] = self.var_fenetre.get().strip()
         self.brouillon["timezone"] = self.var_fuseau.get().strip()
+        # Arriver au bout de l'assistant vaut consentement : il a été demandé en chemin.
+        self.brouillon["consentement"] = True
 
         problemes = configuration.valider(self.brouillon)
         if problemes:

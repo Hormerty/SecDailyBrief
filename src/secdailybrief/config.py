@@ -35,6 +35,8 @@ DEFAUTS: dict = {
     "window_hours": 27,
     "heure": "06:00",
     "taille_texte": 10,
+    # Un consentement donné une fois n'a pas à être redemandé à chaque retour sur la page.
+    "consentement": False,
 }
 
 
