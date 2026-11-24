@@ -27,6 +27,17 @@ def dossier_executable() -> Path:
     return Path(__file__).resolve().parent.parent.parent
 
 
+def dossier_ressources() -> Path:
+    """Dossier des ressources embarquées (icône, logo).
+
+    Dans un binaire figé, elles sont décompressées hors du dossier de l'exécutable :
+    `dossier_executable()` ne les voit pas.
+    """
+    if getattr(sys, "frozen", False):
+        return Path(getattr(sys, "_MEIPASS", dossier_executable())) / "assets"
+    return Path(__file__).resolve().parent.parent.parent / "assets"
+
+
 def est_portable() -> bool:
     return (dossier_executable() / MARQUEUR_PORTABLE).exists()
 

@@ -150,15 +150,26 @@ class Application:
         self.pied.configure(text=self._texte("app.pied"))
 
     # --- assistant ---------------------------------------------------------
+    def _entete(self, parent, hauteur: int = 62) -> ttk.Frame:
+        """Bandeau d'identité, commun au panneau et aux pages de l'assistant.
+
+        Encapsulé dans son propre cadre : la page de la stack gère ses enfants en grid,
+        et mêler pack et grid dans un même conteneur fait échouer Tk.
+        """
+        cadre = ttk.Frame(parent)
+        self._bandeau(cadre, hauteur=hauteur)
+        return cadre
+
     def page_langue(self) -> None:
         page = self._vider()
         page.pack(fill="both", expand=True)
 
+        self._entete(page).pack(fill="x")
         ttk.Label(page, text=self._texte("wizard.bienvenue"),
-                  font=self._titre(16)).pack(anchor="w")
+                  font=self._titre(13)).pack(anchor="w", padx=14, pady=(10, 0))
         ttk.Label(page, text=self._texte("wizard.intro"), wraplength=680,
-                  justify="left").pack(anchor="w", pady=(8, 16))
-        ttk.Label(page, text=self._texte("wizard.langue")).pack(anchor="w")
+                  justify="left").pack(anchor="w", padx=14, pady=(8, 16))
+        ttk.Label(page, text=self._texte("wizard.langue")).pack(anchor="w", padx=14)
 
         variable = tk.StringVar(value=self.langue)
         libelles = {code: code.upper() for code in i18n.langues_proposees()}
@@ -182,17 +193,18 @@ class Application:
         page = self._vider()
         page.pack(fill="both", expand=True)
 
+        self._entete(page).pack(fill="x")
         ttk.Label(page, text=self._texte("consent.titre"),
-                  font=self._titre(14)).pack(anchor="w")
+                  font=self._titre(13)).pack(anchor="w", padx=14, pady=(10, 0))
         ttk.Label(page, text=self._texte("consent.texte"), wraplength=690,
-                  justify="left").pack(anchor="w", pady=(8, 8))
+                  justify="left").pack(anchor="w", padx=14, pady=(8, 8))
         ttk.Label(page, text=self._texte("consent.pause"), wraplength=690,
-                  justify="left").pack(anchor="w", pady=(0, 12))
+                  justify="left").pack(anchor="w", padx=14, pady=(0, 12))
 
         domaines = domaines_contactes()
         cadre = ttk.LabelFrame(page, text=f"{self._texte('consent.domaines')} "
                                           f"({len(domaines)})", padding=8)
-        cadre.pack(fill="both", expand=True)
+        cadre.pack(fill="both", expand=True, padx=14)
         liste = tk.Listbox(cadre, height=8, activestyle="none")
         for domaine in domaines:
             liste.insert("end", domaine)
@@ -227,11 +239,12 @@ class Application:
         page = self._vider()
         page.pack(fill="both", expand=True)
 
+        self._entete(page).pack(fill="x")
         ttk.Label(page, text=self._texte("courriel.titre"),
-                  font=self._titre(14)).pack(anchor="w")
+                  font=self._titre(13)).pack(anchor="w", padx=14, pady=(10, 0))
 
         cadre = ttk.Frame(page)
-        cadre.pack(fill="x", pady=(12, 0))
+        cadre.pack(fill="x", padx=14, pady=(12, 0))
         cadre.columnconfigure(1, weight=1)
 
         self.var_expediteur = tk.StringVar(value=self.brouillon.get("email_user", ""))
@@ -255,12 +268,15 @@ class Application:
         ttk.Entry(cadre, textvariable=self.var_mot_de_passe, show="•").grid(
             row=3, column=1, sticky="ew")
 
+        # L'aide et le lien sur deux lignes : côte à côte, ils se disputaient la largeur et
+        # la fenêtre s'élargissait à 803 px pour les faire tenir, texte tronqué.
         aide = ttk.Frame(page)
-        aide.pack(fill="x", pady=(10, 0))
-        ttk.Label(aide, text=self._texte("courriel.aide"), wraplength=560,
-                  justify="left").pack(side="left")
+        aide.pack(fill="x", padx=14, pady=(10, 0))
+        ttk.Label(aide, text=self._texte("courriel.aide"), wraplength=700,
+                  justify="left").pack(anchor="w")
         ttk.Button(aide, text=self._texte("courriel.lien"),
-                   command=lambda: webbrowser.open(URL_MOT_DE_PASSE)).pack(side="right")
+                   command=lambda: webbrowser.open(URL_MOT_DE_PASSE)).pack(anchor="w",
+                                                                           pady=(6, 0))
 
         self.var_test = tk.StringVar(value="")
         ttk.Label(page, textvariable=self.var_test, foreground="#1b5e20").pack(anchor="w",
@@ -338,15 +354,17 @@ class Application:
         # place restante et le formulaire garde la sienne. En pack(), le formulaire avait
         # été écrasé à zéro pixel — visible seulement sur une capture.
         page.columnconfigure(0, weight=1)
-        page.rowconfigure(2, weight=1)
+        page.rowconfigure(3, weight=1)
 
+        self._entete(page).grid(row=0, column=0, sticky="ew")
         ttk.Label(page, text=self._texte("stack.titre"),
-                  font=self._titre(14)).grid(row=0, column=0, sticky="w")
+                  font=self._titre(13)).grid(row=1, column=0, sticky="w", padx=14,
+                                             pady=(10, 0))
         ttk.Label(page, text=self._texte("stack.explication"), wraplength=690,
-                  justify="left").grid(row=1, column=0, sticky="w", pady=(6, 10))
+                  justify="left").grid(row=2, column=0, sticky="w", padx=14, pady=(6, 10))
 
         cadre = ttk.Frame(page)
-        cadre.grid(row=2, column=0, sticky="nsew")
+        cadre.grid(row=3, column=0, sticky="nsew", padx=14)
         self.arbre = ttk.Treeview(cadre, columns=("mots",), show="tree headings", height=6)
         self.arbre.heading("#0", text=self._texte("stack.nom"))
         self.arbre.heading("mots", text=self._texte("stack.mots"))
@@ -358,7 +376,7 @@ class Application:
         self._charger_stack()
 
         form = ttk.LabelFrame(page, text=self._texte("stack.ajouter"), padding=8)
-        form.grid(row=3, column=0, sticky="ew", pady=(10, 0))
+        form.grid(row=4, column=0, sticky="ew", padx=14, pady=(10, 0))
         form.columnconfigure(1, weight=1)
 
         self.var_stack_nom = tk.StringVar()
@@ -384,7 +402,7 @@ class Application:
             row=3, column=0, columnspan=2, sticky="w", pady=(6, 0))
 
         barre = ttk.Frame(page)
-        barre.grid(row=4, column=0, sticky="ew", pady=(10, 0))
+        barre.grid(row=5, column=0, sticky="ew", padx=14, pady=(10, 0))
         ttk.Button(barre, text=self._texte("wizard.precedent"),
                    command=self.page_courriel).pack(side="left")
         ttk.Button(barre, text=self._texte("wizard.suivant"),
@@ -457,11 +475,12 @@ class Application:
         page = self._vider()
         page.pack(fill="both", expand=True)
 
+        self._entete(page).pack(fill="x")
         ttk.Label(page, text=self._texte("planif.titre"),
-                  font=self._titre(14)).pack(anchor="w")
+                  font=self._titre(13)).pack(anchor="w", padx=14, pady=(10, 0))
 
         cadre = ttk.Frame(page)
-        cadre.pack(fill="x", pady=(12, 0))
+        cadre.pack(fill="x", padx=14, pady=(12, 0))
         cadre.columnconfigure(1, weight=1)
 
         self.var_heure = tk.StringVar(value=self.brouillon.get("heure", "06:00"))
@@ -544,6 +563,7 @@ class Application:
         canevas = tk.Canvas(parent, height=hauteur, highlightthickness=0, bd=0,
                             bg=self._fond())
         canevas.pack(fill="x")
+        self._charger_logo()
 
         def dessiner(_event=None) -> None:
             largeur = max(canevas.winfo_width(), 200)
@@ -558,12 +578,36 @@ class Application:
             canevas.create_rectangle(0, hauteur - 1, largeur, hauteur, fill="#b9bfc7",
                                      outline="", tags="degrade")
             canevas.delete("titre")
-            canevas.create_text(18, hauteur // 2 - 2, anchor="w",
+            # Le logo occupe la place d'un carré : le titre se décale d'autant, seulement
+            # si l'image a bien pu être chargée.
+            marge = 18
+            if self._logo is not None:
+                canevas.delete("logo")
+                canevas.create_image(marge, hauteur // 2 - 1, anchor="w", image=self._logo,
+                                     tags="logo")
+                marge += self._logo.width() + 12
+            canevas.create_text(marge, hauteur // 2 - 2, anchor="w",
                                 text=self._texte("app.titre"), fill="#1b1d21",
                                 font=self._titre(15), tags="titre")
 
         canevas.bind("<Configure>", dessiner)
         return canevas
+
+    def _charger_logo(self, cote: int = 28) -> None:
+        """Charge le logo une seule fois, réduit par sous-échantillonnage entier.
+
+        tkinter ne sait pas redimensionner en douceur : on divise par un facteur entier
+        (512 -> 28, facteur 18) plutôt que d'obtenir une image floue.
+        """
+        if getattr(self, "_logo", None) is not None:
+            return
+        self._logo = None
+        try:
+            image = tk.PhotoImage(file=str(paths.dossier_ressources() / "SecDailyBrief-512.png"))
+            facteur = max(1, round(image.width() / cote))
+            self._logo = image.subsample(facteur, facteur)
+        except Exception:                   # noqa: BLE001 - pas de logo, pas de drame
+            self._logo = None
 
     def _carte(self, parent):
         """Cadre en léger relief : un filet sombre, le fond du thème.
