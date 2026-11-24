@@ -90,8 +90,9 @@ def test_page_stack_remplie_avec_les_defauts_du_moteur(application):
 def test_fuseau_propose_dans_une_liste(application):
     """Un champ vide sans liste ne laisse aucun moyen de choisir."""
     application.page_planification()
-    assert application.var_fuseau.get() == "Europe/Brussels"
-    assert "Europe/Brussels" in application.fuseaux_proposes
+    # La zone vient de la détection, plus d'une constante : la liste doit donc la contenir.
+    assert application.var_fuseau.get() == application.brouillon["timezone"]
+    assert application.var_fuseau.get() in application.fuseaux_proposes
     # Éditable : la liste complète fait six cents entrées, elle ne peut pas y être.
     assert str(application.combo_fuseau.cget("state")) != "readonly"
 
@@ -291,6 +292,29 @@ def test_des_reglages_fautifs_sont_signales_sans_effacer_l_adresse(application, 
 
     assert application._reglages_en_attente == []
     assert application.reglages == avant, "les réglages ne doivent pas être réinitialisés"
+
+
+def test_le_bouton_de_mise_a_jour_annonce_une_version_plus_recente(application, monkeypatch):
+    """La requête part hors du fil UI, puis le résultat revient par le fil principal."""
+    import time as _time
+
+    monkeypatch.setattr(app.updates, "derniere_publiee", lambda *a, **k: "v9.9.9")
+    questions = []
+    monkeypatch.setattr(app.messagebox, "askyesno",
+                        lambda titre, texte: questions.append(texte) or False)
+    application.afficher_panneau()
+    statut_avant = application.var_statut.get()
+
+    application._verifier_maj()
+    for _ in range(200):
+        application.racine.update()
+        if not application._maj_en_cours:
+            break
+        _time.sleep(0.02)
+
+    assert questions, "aucune question posée sur la nouvelle version"
+    assert "9.9.9" in questions[0]
+    assert application.var_statut.get() == statut_avant, "la ligne d'état doit être restaurée"
 
 
 def test_le_panneau_donne_acces_aux_reglages(application):

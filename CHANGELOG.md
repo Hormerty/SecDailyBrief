@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.3.0 — 24 November 2026
+
+### Added
+
+- **The time zone is detected on first run.** Until now the wizard offered Brussels, the
+  author's zone, to everyone. Windows zone names are now translated to their IANA equivalent;
+  a zone outside the table keeps the default, and a zone the user has chosen is never
+  overwritten.
+- **"Check for updates" button** in the panel. It asks GitHub on demand, reports whether the
+  installed version is current, and offers to open the download page when a newer one exists.
+
+### Fixed
+
+- The diagnostic and the startup update banner updated the interface from their worker
+  thread. Tk rejects this with "main thread is not in main loop", so the diagnostic report
+  could fail to appear while the window stayed on its waiting state. All background work now
+  goes through a single helper that polls from the main thread, and the test suite treats
+  unhandled thread exceptions as errors.
+
 ## 1.2.1 — 24 November 2026
 
 ### Fixed

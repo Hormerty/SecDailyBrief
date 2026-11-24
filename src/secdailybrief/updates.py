@@ -13,6 +13,7 @@ import urllib.request
 
 DEPOT = "Hormerty/SecDailyBrief"
 URL = f"https://api.github.com/repos/{DEPOT}/releases/latest"
+PAGE = f"https://github.com/{DEPOT}/releases/latest"
 
 
 def numeros(version: str) -> tuple[int, int, int]:

@@ -1,4 +1,4 @@
-SecDailyBrief 1.2.1
+SecDailyBrief 1.3.0
 ===================
 
 A daily cyber-security brief by e-mail, composed from public sources and adapted to your

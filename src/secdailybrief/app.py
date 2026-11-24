@@ -23,7 +23,7 @@ from tkinter import messagebox, ttk
 
 from . import config as configuration
 from . import __version__ as version_actuelle
-from . import engine, historique, i18n, logging_setup, mail, paths, runner, schedule, secrets
+from . import engine, fuseau, historique, i18n, logging_setup, mail, paths, runner, schedule, secrets, updates
 
 TAILLE_MIN = (760, 540)
 URL_MOT_DE_PASSE = "https://myaccount.google.com/apppasswords"
@@ -67,13 +67,25 @@ def langue_du_systeme() -> str | None:
         return None
 
 
+def reglages_initiaux(dossier: Path) -> dict:
+    """Réglages de départ : ceux du fichier, ou les défauts avec l'heure de cette machine.
+
+    La détection ne s'applique qu'à une première exécution : une fois l'utilisateur passé par
+    l'assistant, son choix de fuseau lui appartient et n'est jamais écrasé.
+    """
+    reglages = configuration.charger(dossier)
+    if not configuration.chemin_config(dossier).exists():
+        reglages["timezone"] = fuseau.zone_iana()
+    return reglages
+
+
 class Application:
     """Une fenêtre, deux visages : l'assistant au premier lancement, le panneau ensuite."""
 
     def __init__(self, racine: tk.Tk, dossier: Path) -> None:
         self.racine = racine
         self.dossier = dossier
-        self.reglages = configuration.charger(dossier)
+        self.reglages = reglages_initiaux(dossier)
         self.jetons = secrets.charger_jetons(paths.chemin_secret())
         self.perimetre = configuration.charger_perimetre(dossier)
 
@@ -745,6 +757,7 @@ class Application:
         bouton(boutons, self._texte("panneau.journal"), self._ouvrir_journal, 1, 2)
         bouton(boutons, self._texte("panneau.diagnostic"), self._ouvrir_diagnostic, 2, 0)
         bouton(boutons, self._texte("panneau.historique"), self._ouvrir_historique, 2, 1)
+        bouton(boutons, self._texte("panneau.verifier_maj"), self._verifier_maj, 2, 2)
 
         # Activité : une barre indéterminée et une phrase qui dit combien de temps ça prend.
         # Sans elles, « Lancer maintenant » ne montrait rien pendant quatre minutes.
@@ -785,21 +798,43 @@ class Application:
         self._appliquer_taille(taille)
         self.afficher_panneau()
 
+    def _en_arriere_plan(self, travail, suite, delai: int = 250) -> None:
+        """Exécute `travail` hors du fil UI, puis `suite(résultat)` dans le fil UI.
+
+        Tk n'accepte pas d'être touché depuis un autre fil : `after()` y lève « main thread is
+        not in main loop », et l'exception ne laisse qu'un avertissement pendant que la
+        fenêtre reste figée dans son état d'attente. Le fil de travail dépose donc son
+        résultat ; le fil principal vient le chercher.
+        """
+        etat = {"fait": False, "valeur": None}
+
+        def executant() -> None:
+            try:
+                etat["valeur"] = travail()
+            finally:
+                etat["fait"] = True      # même en cas d'erreur, la fenêtre doit se débloquer
+
+        threading.Thread(target=executant, daemon=True).start()
+
+        def verifier() -> None:
+            if not etat["fait"]:
+                self.racine.after(delai, verifier)
+                return
+            suite(etat["valeur"])
+
+        self.racine.after(delai, verifier)
+
     def _verifier_mise_a_jour(self) -> None:
         """Une seule vérification par session : la fenêtre est reconstruite à chaque page."""
         if self._maj_verifiee:
             return
         self._maj_verifiee = True
 
-        def travail() -> None:
-            from . import updates
-
-            derniere = updates.derniere_publiee()
+        def suite(derniere) -> None:
             if derniere and updates.plus_recente(version_actuelle, derniere):
-                self.racine.after(0, lambda: self.var_maj.set(
-                    self._texte("panneau.maj").format(version=derniere)))
+                self.var_maj.set(self._texte("panneau.maj").format(version=derniere))
 
-        threading.Thread(target=travail, daemon=True).start()
+        self._en_arriere_plan(updates.derniere_publiee, suite)
 
     def _lancer(self, mode: str, preflight: bool = True) -> None:
         if getattr(self, "_en_cours", False):
@@ -809,34 +844,24 @@ class Application:
             return
 
         self._en_cours = True
-        self._resultat = None
         self._activer_boutons(False)
         self._afficher_activite(True)
 
-        def travail() -> None:
+        def travail():
             journal = logging_setup.journaliser(paths.chemin_journal())
             resultat = runner.executer(self.reglages, self.mot_de_passe, journal,
                                        mode=mode, dossier=self.dossier, preflight=preflight)
-            # On ne touche pas à Tk depuis ce fil : `after()` y lève « main thread is not
-            # in main loop », et le panneau resterait désactivé pour de bon. On dépose le
-            # résultat, le fil principal vient le chercher.
-            self._resultat = (resultat.statut, resultat.duree)
+            return resultat.statut, resultat.duree
 
-        threading.Thread(target=travail, daemon=True).start()
-        self.racine.after(300, self._attendre_fin)
+        def suite(resultat) -> None:
+            statut, duree = resultat
+            self._en_cours = False
+            self._afficher_activite(False)
+            self._activer_boutons(True)
+            self._afficher_statut(f"{self._texte('panneau.statut')} : "
+                                  f"{self._libelle_statut(statut)} ({duree:.0f} s)")
 
-    def _attendre_fin(self) -> None:
-        if self._resultat is None:
-            self.racine.after(300, self._attendre_fin)
-            return
-
-        statut, duree = self._resultat
-        self._resultat = None
-        self._en_cours = False
-        self._afficher_activite(False)
-        self._activer_boutons(True)
-        self._afficher_statut(f"{self._texte('panneau.statut')} : "
-                              f"{self._libelle_statut(statut)} ({duree:.0f} s)")
+        self._en_arriere_plan(travail, suite, delai=300)
 
     def _activer_boutons(self, actif: bool) -> None:
         for bouton in getattr(self, "boutons_action", []):
@@ -872,6 +897,33 @@ class Application:
         if chemin.exists():
             lignes = chemin.read_text(encoding="utf-8", errors="replace").splitlines()
             texte.insert("end", "\n".join(lignes[-800:]))
+
+    def _verifier_maj(self) -> None:
+        """Interroge GitHub à la demande : le bandeau de démarrage ne suffit pas toujours."""
+        if getattr(self, "_maj_en_cours", False):
+            return                      # un second clic ne lance pas une seconde requête
+        self._maj_en_cours = True
+        statut_avant = self.var_statut.get()
+        self._afficher_statut("…")
+
+        def suite(publiee) -> None:
+            self._maj_en_cours = False
+            self._afficher_statut(statut_avant)
+            if publiee is None:
+                messagebox.showerror(self._texte("commun.erreur"), self._texte("maj.echec"))
+                return
+            if updates.plus_recente(version_actuelle, publiee):
+                question = self._texte("maj.dispo").format(version=publiee,
+                                                           actuelle=version_actuelle)
+                if messagebox.askyesno(self._texte("commun.information"), question):
+                    webbrowser.open(updates.PAGE)
+                return
+            messagebox.showinfo(self._texte("commun.information"),
+                                self._texte("maj.ok").format(version=version_actuelle))
+
+        # Hors du fil UI : l'appel a un délai de cinq secondes, et une fenêtre figée
+        # pendant cinq secondes ressemble à un plantage.
+        self._en_arriere_plan(updates.derniere_publiee, suite)
 
     def _libelle_statut(self, statut: str) -> str:
         """Les statuts du lanceur, dits dans la langue de l'interface."""
@@ -915,18 +967,17 @@ class Application:
         """Le diagnostic interroge le réseau et le serveur SMTP : il tourne hors du fil UI."""
         self._afficher_statut("…")
 
-        def travail() -> None:
+        def travail() -> str:
             from . import doctor
 
-            texte = doctor.rapport(doctor.collecter(
+            return doctor.rapport(doctor.collecter(
                 dossier=self.dossier, reglages=self.reglages,
                 # Relu depuis le disque, et non depuis la mémoire : c'est le seul moyen
                 # d'être sûr que ce que le diagnostic affirme est bien enregistré.
                 jetons=secrets.charger_jetons(paths.chemin_secret()),
                 tester_smtp=mail.verifier_connexion))
-            self.racine.after(0, lambda: self._montrer_rapport(texte))
 
-        threading.Thread(target=travail, daemon=True).start()
+        self._en_arriere_plan(travail, self._montrer_rapport)
 
     def _montrer_rapport(self, texte: str) -> None:
         lignes = [ligne for ligne in texte.splitlines() if ligne.strip()]
