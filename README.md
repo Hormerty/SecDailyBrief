@@ -42,8 +42,15 @@ Three ways out, in order of preference:
    only for you.
 2. **Add an exclusion** for the folder holding `SecDailyBrief.exe`. The scheduled task runs
    that same file, so one exclusion covers both the manual runs and the daily one.
-3. **Check the checksum** of the downloaded archive against the one in the release notes
-   before allowing it.
+3. **Check the checksum** before allowing it. Every release carries a `SHA256SUMS` file
+   produced by the build itself:
+
+   ```powershell
+   Get-FileHash .\SecDailyBrief-1.4.0-win64.zip -Algorithm SHA256
+   ```
+
+   Compare it with the line in `SHA256SUMS`. Download only from the
+   [official releases page](../../releases) — a copy hosted elsewhere may have been altered.
 
 ## What it does
 

@@ -51,6 +51,22 @@ jobs:
           powershell -NoProfile -ExecutionPolicy Bypass -File build\build.ps1
           Get-ChildItem "$env:SDB_SORTIE\dist\*.zip" | ForEach-Object { "  $($_.Name) : $($_.Length) octets" }
 
+      - name: Empreintes des archives
+        shell: pwsh
+        env:
+          SDB_SORTIE: ${{ runner.temp }}\sortie
+        run: |
+          # Un seul fichier à vérifier, produit par la CI elle-même : les empreintes recopiées
+          # à la main dans les notes de version finissent toujours par diverger.
+          $dossier = Join-Path $env:SDB_SORTIE "dist"
+          $lignes = Get-ChildItem "$dossier\*.zip" | Sort-Object Name | ForEach-Object {
+            $empreinte = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$empreinte  $($_.Name)"
+          }
+          $fichier = Join-Path $env:SDB_SORTIE "SHA256SUMS"
+          Set-Content -Path $fichier -Value $lignes -Encoding ascii
+          Get-Content $fichier | ForEach-Object { "  $_" }
+
       - name: Publier la version et y deposer les archives
         shell: pwsh
         env:
@@ -59,8 +75,10 @@ jobs:
           $dossier = Join-Path $env:RUNNER_TEMP "sortie\dist"
           $fichiers = @(Get-ChildItem "$dossier\*.zip")
           if ($fichiers.Count -ne 2) { throw "Deux archives attendues, $($fichiers.Count) trouvee(s)." }
+          $somme = Join-Path $env:RUNNER_TEMP "sortie\SHA256SUMS"
           $titre = "SecDailyBrief " + ($env:GITHUB_REF_NAME -replace '^v', '')
           $arguments = @("release", "create", $env:GITHUB_REF_NAME, "--title", $titre, "--generate-notes")
           if ($env:GITHUB_REF_NAME -match '-') { $arguments += "--prerelease" }
           $arguments += $fichiers | ForEach-Object { $_.FullName }
+          $arguments += $somme
           gh @arguments
