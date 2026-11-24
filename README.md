@@ -23,6 +23,10 @@ configuration is injected from the outside.
 The executable is not code-signed: Windows will show "Windows protected your PC" on first
 launch. This is accepted, and documented in the `README.txt` inside the archive.
 
+No Python installation is required: the executable embeds its own interpreter. The archive
+has been installed and run end to end on a clean Windows, without Python and without any
+development tooling.
+
 ## What it does
 
 Every morning, an e-mail that gathers the day's security advisories, ranks the most critical
