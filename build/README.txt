@@ -60,6 +60,21 @@ Deleting "portable.flag" is enough to return to the normal mode — the existing
 stays where it was written.
 
 
+IF YOUR ANTIVIRUS BLOCKS IT
+---------------------------
+
+SecDailyBrief.exe is not code-signed, and a program that restarts itself to do its work
+triggers several heuristic rules at once. Some scanners hold or block it on first launch.
+
+Nothing is hidden in the file, and every release publishes the SHA256 of its archives.
+
+- Add an exclusion for the folder that contains SecDailyBrief.exe. The scheduled task runs
+  that same file, so one exclusion covers both the manual runs and the daily one.
+- Or report a false positive to your vendor. For Avast:
+  https://www.avast.com/false-positive-file-form.php
+  This fixes it for every user, not only for you.
+
+
 UNINSTALLING
 ------------
 
@@ -70,9 +85,9 @@ offers to delete the data. You can then delete this folder.
 IF SOMETHING GOES WRONG
 -----------------------
 
-The "Diagnostic" button in the panel produces a report: ten checks (engine, dependencies, TLS
-certificates, data folder, configuration, password, time zone, network, SMTP, scheduled
-task). Paste it into your support request; it saves a lot of back and forth.
+The "Diagnostic" button in the panel produces a report: eleven checks (engine, dependencies,
+TLS certificates, data folder, settings, password, time zone, network, SMTP, scheduled task,
+perimeter file). Paste it into your support request; it saves a lot of back and forth.
 
 The full log can also be read in the panel, through the "Log" button.
 

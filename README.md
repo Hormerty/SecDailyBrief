@@ -28,6 +28,23 @@ No Python installation is required: the executable embeds its own interpreter. T
 has been installed and run end to end on a clean Windows, without Python and without any
 development tooling.
 
+### Antivirus
+
+The executable is not code-signed — a deliberate choice — and a PyInstaller binary that
+relaunches itself to do its work trips several heuristic rules at once. Some scanners hold or
+block it on first launch; Avast calls this CyberCapture, or a false positive.
+
+Nothing is hidden in the file, and every release publishes the checksums of its archives.
+Three ways out, in order of preference:
+
+1. **Report a false positive** to the vendor. For Avast:
+   <https://www.avast.com/false-positive-file-form.php>. This fixes it for every user, not
+   only for you.
+2. **Add an exclusion** for the folder holding `SecDailyBrief.exe`. The scheduled task runs
+   that same file, so one exclusion covers both the manual runs and the daily one.
+3. **Check the checksum** of the downloaded archive against the one in the release notes
+   before allowing it.
+
 ## What it does
 
 Every morning, an e-mail that gathers the day's security advisories, ranks the most critical
