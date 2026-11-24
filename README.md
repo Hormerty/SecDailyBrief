@@ -2,92 +2,104 @@
 
 A daily security brief by e-mail, built for your own stack.
 
-Cette application Windows pilote le moteur de veille du dépôt
-[`Sec_Daily_report-`](https://github.com/Hormerty/Sec_Daily_report-) **sans le modifier** :
-le moteur est récupéré à un commit épinglé, son empreinte est vérifiée, et la configuration
-lui est injectée de l'extérieur.
+This Windows application drives the watch engine of the
+[`Sec_Daily_report-`](https://github.com/Hormerty/Sec_Daily_report-) repository **without
+modifying it**: the engine is fetched at a pinned commit, its checksum is verified, and the
+configuration is injected from the outside.
 
-> **Version 1.1.0** — première version distribuable, en deux archives :
-> `SecDailyBrief-1.1.0-win64.zip` (données dans le profil Windows) et
-> `SecDailyBrief-1.1.0-win64-portable.zip` (données à côté de l'exécutable).
+> **Version 1.1.0** — first distributable version, in two archives:
+> `SecDailyBrief-1.1.0-win64.zip` (data in the Windows profile) and
+> `SecDailyBrief-1.1.0-win64-portable.zip` (data beside the executable).
 
 ## Installation
 
-1. Téléchargez une archive depuis les [versions publiées](../../releases/latest).
-2. Décompressez-la où vous voulez, puis lancez `SecDailyBrief.exe`.
-3. L'assistant demande la langue, votre adresse d'envoi et un mot de passe
-   d'application — pas votre mot de passe habituel. Pour Gmail :
-   <https://myaccount.google.com/apppasswords>.
-4. Le bouton **Tester l'envoi** vérifie la configuration avant de l'enregistrer, puis
-   **Terminer** crée la tâche planifiée quotidienne.
+1. Download an archive from the [published releases](../../releases/latest).
+2. Extract it wherever you like, then run `SecDailyBrief.exe`.
+3. The wizard asks for your language, your sending address and an app password — not your
+   usual password. For Gmail: <https://myaccount.google.com/apppasswords>.
+4. The **Test sending** button checks the configuration before saving it, then **Finish**
+   creates the daily scheduled task.
 
-L'exécutable n'est pas signé : Windows affichera « Windows a protégé votre PC » au premier
-lancement. C'est assumé, et documenté dans le `README.txt` de l'archive.
+The executable is not code-signed: Windows will show "Windows protected your PC" on first
+launch. This is accepted, and documented in the `README.txt` inside the archive.
 
 ## What it does
 
-Chaque matin, un courriel qui rassemble les avis de sécurité du jour, note les plus
-critiques, et ne garde que ce qui touche votre stack. Le moteur interroge une centaine de
-sources publiques, déduplique, et rend un rapport HTML et texte.
+Every morning, an e-mail that gathers the day's security advisories, ranks the most critical
+ones, and keeps only what touches your stack. The engine queries around a hundred public
+sources, deduplicates, and produces both an HTML and a text report.
 
-Le programme ne tourne pas en permanence : il se réveille, travaille une à deux minutes,
-puis s'arrête. Aucun compte, aucun serveur intermédiaire, aucune télémétrie.
+The program does not run continuously: it wakes up, works for one to two minutes, then stops.
+No account, no intermediary server, no telemetry.
 
-## Principes
+## Principles
 
-- **Rien n'est modifié chez le moteur.** `vendor/veille.py` est téléchargé à un SHA précis
-  et surveillé par une empreinte ; la stack et la configuration sont injectées depuis
-  l'application, avant l'appel à `main()`.
-- **Aucune surveillance du poste.** L'application lit des flux publics et envoie un e-mail.
-  Elle ne lit aucun document, ne capture rien, ne transmet rien à son auteur.
-- **Vos réglages restent chez vous**, dans `%APPDATA%\SecDailyBrief`, et s'effacent depuis
-  l'application.
+- **Nothing is changed on the engine side.** `vendor/veille.py` is downloaded at a precise SHA
+  and watched by a checksum; the stack and the configuration are injected from the
+  application, before `main()` is called.
+- **No monitoring of your machine.** The application reads public feeds and sends an e-mail.
+  It reads no document, captures nothing, and transmits nothing to its author.
+- **Your settings stay with you**, in `%APPDATA%\SecDailyBrief`, and are erased from the
+  application itself.
 
-## Développement
+## Development
 
 ```bash
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt -r requirements-dev.txt
 
-.venv\Scripts\python.exe tools\fetch_engine.py --sha <commit>   # récupère le moteur épinglé
-.venv\Scripts\python.exe tools\fetch_engine.py --verify         # rejoue le contrôle d'empreinte
+.venv\Scripts\python.exe tools\fetch_engine.py --sha <commit>   # fetch the pinned engine
+.venv\Scripts\python.exe tools\fetch_engine.py --verify         # replay the checksum check
 
 .venv\Scripts\python.exe -m pytest -q
 ```
 
-### Empaqueter
+### Packaging
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File build\build.ps1
 ```
 
-Le script vérifie d'abord l'empreinte du moteur — un binaire qui embarquerait un moteur
-altéré serait indétectable une fois livré — puis produit `dist\SecDailyBrief\` et **deux**
-archives : `SecDailyBrief-<version>-win64.zip` et `SecDailyBrief-<version>-win64-portable.zip`.
-La seconde contient un fichier `portable.flag` qui fait vivre les données dans un dossier
-`data\` à côté de l'exécutable. Les deux contiennent l'exécutable, `README.txt`,
-`uninstall.ps1`, `LICENSE` et `CHANGELOG.md`.
+The script first verifies the engine checksum — a binary embedding an altered engine would be
+undetectable once shipped — then produces `dist\SecDailyBrief\` and **two** archives:
+`SecDailyBrief-<version>-win64.zip` and `SecDailyBrief-<version>-win64-portable.zip`.
+The second one contains a `portable.flag` file that makes the data live in a `data\` folder
+beside the executable. Both contain the executable, `README.txt`, `uninstall.ps1`, `LICENSE`
+and `CHANGELOG.md`.
 
-Le script refuse de construire si les trois déclarations de version divergent — le paquet,
-les propriétés Windows du fichier `.exe`, et `pyproject.toml`.
+The script refuses to build if the three version declarations disagree — the package, the
+Windows properties of the `.exe` file, and `pyproject.toml`.
 
-### Encodage
+### Continuous integration
 
-Tout est lu et écrit en UTF-8 explicite. Deux pièges rencontrés pour de vrai, et les
-parades correspondantes :
+Two workflows live in `.github/workflows/`:
 
-- **Windows PowerShell 5.1** — celui que Windows livre encore — lit et écrit en ANSI par
-  défaut. Un aller-retour `Get-Content` / `Set-Content` sur un fichier UTF-8 le corrompt
-  (`é` devient `Ã©`). On ne réécrit pas un fichier source avec ce shell : on utilise un
-  éditeur, ou `-Encoding UTF8` explicitement.
-- **Le BOM** — Notepad et `Out-File` en produisent un, et `json` le refuse. Le fichier de
-  configuration est donc lu en `utf-8-sig`, qui l'accepte comme son absence.
+- **`tests.yml`** runs the suite on every push and pull request, after checking the engine
+  checksum.
+- **`release.yml`** runs on a `v*` tag: it rebuilds both archives on a Windows runner,
+  refuses to continue when the tag and the package version disagree, and attaches them to the
+  release.
 
-Côté code, chaque `read_text` / `write_text` porte son encodage, et les sorties console
-passent par `PYTHONIOENCODING=utf-8` quand elles contiennent autre chose que de l'ASCII.
+Publishing therefore does not depend on a particular workstation. `SDB_PYTHON` and
+`SDB_SORTIE` let `build.ps1` use another interpreter and write elsewhere.
+
+### Encoding
+
+Everything is read and written as explicit UTF-8. Two traps met for real, and how each was
+handled:
+
+- **Windows PowerShell 5.1** — the one Windows still ships — reads and writes ANSI by
+  default. A `Get-Content` / `Set-Content` round trip on a UTF-8 file corrupts it
+  (`é` becomes `Ã©`). A source file is never rewritten through this shell: use an editor, or
+  an explicit `-Encoding UTF8`.
+- **The BOM** — Notepad and `Out-File` produce one, and `json` rejects it. The configuration
+  file is therefore read as `utf-8-sig`, which accepts it as well as its absence.
+
+In the code, every `read_text` / `write_text` carries its encoding, and console output goes
+through `PYTHONIOENCODING=utf-8` whenever it contains anything beyond ASCII.
 
 ## Licence
 
-MIT — voir `LICENSE`.
+MIT — see `LICENSE`.
 
 Developed by Hormerty · © 2026
