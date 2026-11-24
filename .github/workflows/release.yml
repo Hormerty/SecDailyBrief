@@ -1,0 +1,66 @@
+name: release
+
+# Publier une version ne doit dependre ni d'un poste, ni d'un venv, ni d'un chemin D:\.
+# Un tag pousse suffit : le binaire est reconstruit sur un runner Windows, verifie, puis
+# attache a la version. Le tag doit correspondre a la version du paquet — un binaire
+# annoncant 1.1.0 dans une version 1.2.0 serait indetectable pour qui telecharge.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  publier:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Installer les dependances
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-dev.txt
+          python -m pip install -e .
+
+      - name: Verifier l'empreinte du moteur
+        run: python tools/fetch_engine.py --verify
+
+      - name: Le tag correspond-il a la version du paquet
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path "src\secdailybrief\__init__.py" -Pattern '__version__ = "([^"]+)"').Matches[0].Groups[1].Value
+          $tag = $env:GITHUB_REF_NAME -replace '^v', ''
+          if ($tag -ne $version) {
+            throw "Le tag $tag ne correspond pas a la version $version du paquet."
+          }
+          Write-Host "Version $version confirmee par le tag $env:GITHUB_REF_NAME."
+
+      - name: Construire les deux archives
+        shell: pwsh
+        env:
+          SDB_PYTHON: python
+          SDB_SORTIE: ${{ runner.temp }}\sortie
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File build\build.ps1
+          Get-ChildItem "$env:SDB_SORTIE\dist\*.zip" | ForEach-Object { "  $($_.Name) : $($_.Length) octets" }
+
+      - name: Publier la version et y deposer les archives
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $dossier = Join-Path $env:RUNNER_TEMP "sortie\dist"
+          $fichiers = @(Get-ChildItem "$dossier\*.zip")
+          if ($fichiers.Count -ne 2) { throw "Deux archives attendues, $($fichiers.Count) trouvee(s)." }
+          $titre = "SecDailyBrief " + ($env:GITHUB_REF_NAME -replace '^v', '')
+          $arguments = @("release", "create", $env:GITHUB_REF_NAME, "--title", $titre, "--generate-notes")
+          if ($env:GITHUB_REF_NAME -match '-') { $arguments += "--prerelease" }
+          $arguments += $fichiers | ForEach-Object { $_.FullName }
+          gh @arguments

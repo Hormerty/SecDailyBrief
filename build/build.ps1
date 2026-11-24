@@ -25,8 +25,10 @@ if ($versionPaquet -ne $versionPyproject -or "$versionPaquet.0" -ne $versionExe)
     throw "Versions incoherentes : paquet=$versionPaquet pyproject=$versionPyproject exe=$versionExe"
 }
 
-$python = Join-Path $racine ".venv\Scripts\python.exe"
-if (-not (Test-Path $python)) {
+# Interpreteur : celui du venv local, ou celui du runner d'integration continue. Sans cette
+# porte, le script exige un .venv et refuse de tourner ailleurs que sur un poste de dev.
+$python = if ($env:SDB_PYTHON) { $env:SDB_PYTHON } else { Join-Path $racine ".venv\Scripts\python.exe" }
+if (-not $env:SDB_PYTHON -and -not (Test-Path $python)) {
     throw "Environnement absent : creer .venv et installer requirements.txt + requirements-dev.txt"
 }
 
