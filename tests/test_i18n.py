@@ -17,13 +17,18 @@ def test_langues_proposees_triees_et_completes():
 
 
 def test_langue_inconnue_retombe_sur_l_anglais():
-    assert i18n.apparier_langue_systeme("de-DE") == "en"
+    # Une langue que l'interface ne parle pas, pas seulement une langue absente du PC.
+    assert i18n.apparier_langue_systeme("pt-BR") == "en"
+    assert i18n.apparier_langue_systeme("ja-JP") == "en"
     assert i18n.apparier_langue_systeme(None) == "en"
 
 
 def test_langue_systeme_appariee():
     assert i18n.apparier_langue_systeme("fr-BE") == "fr"
     assert i18n.apparier_langue_systeme("en-US") == "en"
+    assert i18n.apparier_langue_systeme("de-DE") == "de"
+    assert i18n.apparier_langue_systeme("es-MX") == "es"
+    assert i18n.apparier_langue_systeme("it-CH") == "it"
 
 
 def test_cle_manquante_completee_par_l_anglais():

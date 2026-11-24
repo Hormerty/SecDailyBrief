@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.0 — 24 November 2026
+
+### Added
+
+- **German, Spanish and Italian.** The interface now speaks six languages; a system set to
+  any of them lands on it directly instead of falling back to English. The report itself is
+  still written in English: only the application is translated.
+- **Saved settings are checked at startup**, like the perimeter file. A `config.json` edited
+  by hand used to stay wrong until the next run; it is now named at launch, with an offer to
+  open the page that fixes it. The settings are never reset — that would erase the address.
+
+### Changed
+
+- The version is checked at build time across the package, the Windows properties and
+  `pyproject.toml`, and publishing is done by a workflow rather than from a workstation.
+
 ## 1.1.0 — 24 November 2026
 
 ### Added
