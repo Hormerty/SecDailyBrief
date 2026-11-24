@@ -7,7 +7,31 @@ Cette application Windows pilote le moteur de veille du dépôt
 le moteur est récupéré à un commit épinglé, son empreinte est vérifiée, et la configuration
 lui est injectée de l'extérieur.
 
-> **État : en construction.** Aucune version distribuable pour l'instant.
+> **Version 1.1.0** — première version distribuable, en deux archives :
+> `SecDailyBrief-1.1.0-win64.zip` (données dans le profil Windows) et
+> `SecDailyBrief-1.1.0-win64-portable.zip` (données à côté de l'exécutable).
+
+## Installation
+
+1. Téléchargez une archive depuis les [versions publiées](../../releases/latest).
+2. Décompressez-la où vous voulez, puis lancez `SecDailyBrief.exe`.
+3. L'assistant demande la langue, votre adresse d'envoi et un mot de passe
+   d'application — pas votre mot de passe habituel. Pour Gmail :
+   <https://myaccount.google.com/apppasswords>.
+4. Le bouton **Tester l'envoi** vérifie la configuration avant de l'enregistrer, puis
+   **Terminer** crée la tâche planifiée quotidienne.
+
+L'exécutable n'est pas signé : Windows affichera « Windows a protégé votre PC » au premier
+lancement. C'est assumé, et documenté dans le `README.txt` de l'archive.
+
+## What it does
+
+Chaque matin, un courriel qui rassemble les avis de sécurité du jour, note les plus
+critiques, et ne garde que ce qui touche votre stack. Le moteur interroge une centaine de
+sources publiques, déduplique, et rend un rapport HTML et texte.
+
+Le programme ne tourne pas en permanence : il se réveille, travaille une à deux minutes,
+puis s'arrête. Aucun compte, aucun serveur intermédiaire, aucune télémétrie.
 
 ## Principes
 
@@ -38,12 +62,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File build\build.ps1
 ```
 
 Le script vérifie d'abord l'empreinte du moteur — un binaire qui embarquerait un moteur
-altéré serait indétectable une fois livré — puis produit `dist\SecDailyBrief\` et
-`dist\SecDailyBrief-1.0.0-win64.zip`. L'archive contient l'exécutable, `README.txt`,
-`uninstall.ps1` et `LICENSE`.
+altéré serait indétectable une fois livré — puis produit `dist\SecDailyBrief\` et **deux**
+archives : `SecDailyBrief-<version>-win64.zip` et `SecDailyBrief-<version>-win64-portable.zip`.
+La seconde contient un fichier `portable.flag` qui fait vivre les données dans un dossier
+`data\` à côté de l'exécutable. Les deux contiennent l'exécutable, `README.txt`,
+`uninstall.ps1`, `LICENSE` et `CHANGELOG.md`.
 
-L'exécutable n'est pas signé : Windows affichera « Windows a protégé votre PC » au premier
-lancement. C'est assumé, et documenté dans le `README.txt` de l'archive.
+Le script refuse de construire si les trois déclarations de version divergent — le paquet,
+les propriétés Windows du fichier `.exe`, et `pyproject.toml`.
 
 ### Encodage
 
