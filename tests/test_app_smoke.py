@@ -280,6 +280,19 @@ def test_un_perimetre_fautif_est_signale_et_restaure(application, monkeypatch):
     assert (mauvais.with_name(mauvais.name + ".invalide")).exists()
 
 
+def test_des_reglages_fautifs_sont_signales_sans_effacer_l_adresse(application, monkeypatch):
+    """Corriger, pas réinitialiser : effacer les réglages effacerait l'adresse."""
+    monkeypatch.setattr(app.messagebox, "askyesno", lambda *a, **k: False)
+    application.reglages["email_user"] = "quelquun@example.com"
+    avant = dict(application.reglages)
+    application._reglages_en_attente = ["heure : format attendu HH:MM"]
+
+    application._signaler_reglages()
+
+    assert application._reglages_en_attente == []
+    assert application.reglages == avant, "les réglages ne doivent pas être réinitialisés"
+
+
 def test_le_panneau_donne_acces_aux_reglages(application):
     """Sans cette porte, une configuration déjà enregistrée n'était plus modifiable."""
     application.afficher_panneau()

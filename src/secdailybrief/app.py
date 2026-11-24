@@ -85,6 +85,10 @@ class Application:
         self.taille = int(self.reglages.get("taille_texte") or 10)
         self._maj_verifiee = False
         self._perimetre_en_attente = configuration.valider_perimetre(self.perimetre)
+        # Les réglages ne sont contrôlés au démarrage que s'il y en a : sur une première
+        # exécution, c'est l'assistant qui les recueille, pas une boîte d'erreur.
+        self._reglages_en_attente = (configuration.valider(self.reglages)
+                                     if self.reglages.get("email_user") else [])
 
         self.racine.title(self.textes["app.titre"])
         self.racine.minsize(*TAILLE_MIN)
@@ -116,10 +120,31 @@ class Application:
         elif page and hasattr(self, f"page_{page}"):
             getattr(self, f"page_{page}")()
 
-        # Après l'affichage : un périmètre fautif doit se dire une fois la fenêtre visible,
+        # Après l'affichage : un fichier fautif doit se dire une fois la fenêtre visible,
         # sinon la boîte de dialogue apparaît sur un écran vide.
+        if self._perimetre_en_attente or self._reglages_en_attente:
+            self.racine.after(200, self._signaler_etat)
+
+    def _signaler_etat(self) -> None:
         if self._perimetre_en_attente:
-            self.racine.after(200, self._signaler_perimetre)
+            self._signaler_perimetre()
+        if self._reglages_en_attente:
+            self._signaler_reglages()
+
+    def _signaler_reglages(self) -> None:
+        """Nomme les réglages fautifs et propose de les corriger.
+
+        Les remettre à zéro serait plus simple, mais effacerait l'adresse de l'utilisateur :
+        on ouvre la page qui permet de les corriger, et c'est lui qui décide.
+        """
+        problemes = self._reglages_en_attente
+        self._reglages_en_attente = []
+        logging_setup.journaliser(paths.chemin_journal()).error(
+            "Reglages invalides : %s", "; ".join(problemes))
+        details = "\n".join(f"• {probleme}" for probleme in problemes)
+        question = self._texte("reglages.invalide").format(details=details)
+        if messagebox.askyesno(self._texte("commun.information"), question):
+            self.page_courriel()
 
     def _signaler_perimetre(self) -> None:
         """Nomme la faute du fichier de périmètre, et propose de repartir de l'exemple.

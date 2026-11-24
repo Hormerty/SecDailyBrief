@@ -109,6 +109,8 @@ TEXTES: dict[str, dict[str, str]] = {
         "commun.fermer": "Fermer",
         "perimetre.invalide": "Le fichier de périmètre contient des erreurs :\n\n"
                               "{details}\n\nRétablir les valeurs d'exemple ?",
+        "reglages.invalide": "Les réglages enregistrés contiennent des erreurs :\n\n"
+                             "{details}\n\nOuvrir les réglages pour les corriger ?",
     },
     "en": {
         "app.titre": "SecDailyBrief",
@@ -206,6 +208,8 @@ TEXTES: dict[str, dict[str, str]] = {
         "commun.fermer": "Close",
         "perimetre.invalide": "The perimeter file contains errors:\n\n"
                               "{details}\n\nRestore the example values?",
+        "reglages.invalide": "The saved settings contain errors:\n\n"
+                             "{details}\n\nOpen the settings to fix them?",
     },
     "nl": {
         "app.titre": "SecDailyBrief",
@@ -302,6 +306,8 @@ TEXTES: dict[str, dict[str, str]] = {
         "commun.fermer": "Sluiten",
         "perimetre.invalide": "Het perimetriebestand bevat fouten:\n\n"
                               "{details}\n\nDe voorbeeldwaarden herstellen?",
+        "reglages.invalide": "De opgeslagen instellingen bevatten fouten:\n\n"
+                             "{details}\n\nDe instellingen openen om ze te corrigeren?",
     },
 }
 
