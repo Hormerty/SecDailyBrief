@@ -85,7 +85,10 @@ def verifier_dossier(dossier: Path) -> Verification:
         paths.s_assurer_dossier()
     except OSError as exc:
         return Verification("Dossier de donnees", ECHEC, str(exc))
-    return Verification("Dossier de donnees", OK, str(dossier))
+    # Le mode compte : en portable, les donnees voyagent avec le programme et disparaissent
+    # si l'on efface le dossier. Le dire evite de croire qu'une sauvegarde est faite ailleurs.
+    mode = "portable" if paths.est_portable() else "profil Windows"
+    return Verification("Dossier de donnees", OK, f"{dossier} ({mode})")
 
 
 def verifier_configuration(reglages: dict) -> Verification:

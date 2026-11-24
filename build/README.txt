@@ -1,4 +1,4 @@
-SecDailyBrief 1.0.0
+SecDailyBrief 1.1.0
 ===================
 
 Un rapport de veille cybersécurité par e-mail, tous les matins, composé à partir de
@@ -42,10 +42,24 @@ Dans %APPDATA%\SecDailyBrief :
    perimetre.json    les pays et produits que vous surveillez
    secret.dpapi      le mot de passe, chiffré par Windows (illisible sur une autre machine)
    journal.log       le journal des exécutions
+   historique.json   les dernières exécutions, en résumé (7 jours à l'écran)
    seen.json, stats.db, ...   l'état du moteur
 
 Aucun de ces fichiers ne contient de mot de passe en clair. Le bouton « Supprimer toutes
 mes données » du panneau efface l'ensemble d'un clic.
+
+Le bouton « Historique » montre les sept derniers jours : date, mode, statut, durée.
+
+
+MODE PORTABLE
+-------------
+
+L'archive dont le nom contient « portable » contient un fichier « portable.flag ». Tant
+qu'il est là, les données vivent dans un dossier « data » à côté de l'exécutable, et non
+dans votre profil Windows : le programme et vos réglages voyagent ensemble sur une clé USB.
+
+Supprimer « portable.flag » suffit à revenir au mode normal — les données existantes, elles,
+restent là où elles ont été écrites.
 
 
 DÉSINSTALLATION
@@ -58,9 +72,9 @@ planifiée et propose de supprimer les données. Vous pouvez ensuite effacer ce 
 EN CAS DE PROBLÈME
 ------------------
 
-Le bouton « Diagnostic » du panneau produit un rapport : huit vérifications (moteur,
-dossier, configuration, mot de passe, fuseau, réseau, SMTP, tâche planifiée). Copiez-le
-dans votre demande d'aide, il évite beaucoup d'allers-retours.
+Le bouton « Diagnostic » du panneau produit un rapport : dix vérifications (moteur,
+dépendances, certificats TLS, dossier, configuration, mot de passe, fuseau, réseau, SMTP,
+tâche planifiée). Copiez-le dans votre demande d'aide, il évite beaucoup d'allers-retours.
 
 Le journal complet se lit aussi dans le panneau, bouton « Journal ».
 

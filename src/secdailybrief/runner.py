@@ -24,7 +24,7 @@ from pathlib import Path
 
 import requests
 
-from . import lock, paths
+from . import historique, lock, paths
 
 URLS_TEMOIN = (
     "https://cert.cyber.gouv.fr/feed/",
@@ -191,4 +191,10 @@ def executer(config: dict, mot_de_passe: str, journal: logging.Logger, *,
         else:
             journal.error("Moteur termine en erreur : code=%s, duree=%.1fs, mode=%s",
                           code, duree, mode)
+        # Une ligne pour l'historique : c'est ce qui permet de repondre « le rapport est-il
+        # parti hier ? » sans ouvrir le journal.
+        try:
+            historique.enregistrer(statut, duree, mode)
+        except OSError as exc:                  # disque plein, dossier en lecture seule…
+            journal.warning("Historique non enregistre : %s", exc)
         return Resultat(statut, code, duree, lignes)

@@ -15,6 +15,16 @@ Set-Location $racine
 
 $sortieBase = if ($env:SDB_SORTIE) { $env:SDB_SORTIE } else { "D:\SecDailyBrief-build" }
 
+# La version est ecrite a trois endroits — paquet, proprietes Windows, fenetre A propos.
+# Trois copies d'une meme verite derivent toujours : on refuse de construire si elles ne
+# disent pas la meme chose.
+$versionPaquet = (Select-String -Path "src\secdailybrief\__init__.py" -Pattern '__version__ = "([^"]+)"').Matches[0].Groups[1].Value
+$versionPyproject = (Select-String -Path "pyproject.toml" -Pattern '^version = "([^"]+)"').Matches[0].Groups[1].Value
+$versionExe = (Select-String -Path "build\version.txt" -Pattern "StringStruct\('FileVersion', '([^']+)'").Matches[0].Groups[1].Value
+if ($versionPaquet -ne $versionPyproject -or "$versionPaquet.0" -ne $versionExe) {
+    throw "Versions incoherentes : paquet=$versionPaquet pyproject=$versionPyproject exe=$versionExe"
+}
+
 $python = Join-Path $racine ".venv\Scripts\python.exe"
 if (-not (Test-Path $python)) {
     throw "Environnement absent : creer .venv et installer requirements.txt + requirements-dev.txt"
@@ -67,8 +77,9 @@ $sortie = Join-Path $sortieBase "dist\SecDailyBrief"
 Copy-Item "build\README.txt" $sortie -Force
 Copy-Item "build\uninstall.ps1" $sortie -Force
 Copy-Item "LICENSE" $sortie -Force
+Copy-Item "CHANGELOG.md" $sortie -Force
 
-$archive = Join-Path $sortieBase "dist\SecDailyBrief-1.0.0-win64.zip"
+$archive = Join-Path $sortieBase "dist\SecDailyBrief-$versionPaquet-win64.zip"
 if (Test-Path $archive) {
     try { Remove-Item $archive -Force -ErrorAction Stop }
     catch { throw "Archive verrouillee, fermez-la avant de reconstruire : $archive" }
@@ -76,5 +87,21 @@ if (Test-Path $archive) {
 Compress-Archive -Path "$sortie\*" -DestinationPath $archive -ErrorAction Stop
 if (-not (Test-Path $archive)) { throw "L'archive n'a pas ete creee." }
 
+# Seconde archive, portable : le meme binaire, accompagne du marqueur qui fait vivre les
+# donnees a cote de lui au lieu de %APPDATA%. Deux dossiers distincts, pour qu'aucun des
+# deux modes ne puisse heriter du marqueur de l'autre.
+$portable = Join-Path $sortieBase "dist\SecDailyBrief-portable"
+if (Test-Path $portable) { Remove-Item $portable -Recurse -Force }
+Copy-Item $sortie $portable -Recurse -Force
+New-Item -ItemType File -Path (Join-Path $portable "portable.flag") -Force | Out-Null
+$archivePortable = Join-Path $sortieBase "dist\SecDailyBrief-$versionPaquet-win64-portable.zip"
+if (Test-Path $archivePortable) {
+    try { Remove-Item $archivePortable -Force -ErrorAction Stop }
+    catch { throw "Archive portable verrouillee : $archivePortable" }
+}
+Compress-Archive -Path "$portable\*" -DestinationPath $archivePortable -ErrorAction Stop
+
+Write-Host "Version : $versionPaquet"
 Write-Host "Archive : $archive"
+Write-Host "Archive : $archivePortable"
 Write-Host "Construit : $exe"

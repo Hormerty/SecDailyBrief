@@ -18,13 +18,12 @@ import threading
 import webbrowser
 import tkinter as tk
 import tkinter.font as tkfont
-import webbrowser
 from pathlib import Path
 from tkinter import messagebox, ttk
 
 from . import config as configuration
 from . import __version__ as version_actuelle
-from . import engine, i18n, logging_setup, mail, paths, runner, schedule, secrets
+from . import engine, historique, i18n, logging_setup, mail, paths, runner, schedule, secrets
 
 TAILLE_MIN = (760, 540)
 URL_MOT_DE_PASSE = "https://myaccount.google.com/apppasswords"
@@ -85,6 +84,7 @@ class Application:
         self.brouillon = dict(self.reglages)
         self.taille = int(self.reglages.get("taille_texte") or 10)
         self._maj_verifiee = False
+        self._perimetre_en_attente = configuration.valider_perimetre(self.perimetre)
 
         self.racine.title(self.textes["app.titre"])
         self.racine.minsize(*TAILLE_MIN)
@@ -115,6 +115,39 @@ class Application:
             self.afficher_panneau()
         elif page and hasattr(self, f"page_{page}"):
             getattr(self, f"page_{page}")()
+
+        # Après l'affichage : un périmètre fautif doit se dire une fois la fenêtre visible,
+        # sinon la boîte de dialogue apparaît sur un écran vide.
+        if self._perimetre_en_attente:
+            self.racine.after(200, self._signaler_perimetre)
+
+    def _signaler_perimetre(self) -> None:
+        """Nomme la faute du fichier de périmètre, et propose de repartir de l'exemple.
+
+        Le moteur, lui, ne la découvre qu'au run — quatre minutes après le clic, dans le
+        journal. À l'ouverture, elle est encore réparable.
+        """
+        problemes = self._perimetre_en_attente
+        self._perimetre_en_attente = []
+        message = "; ".join(problemes)
+        logging_setup.journaliser(paths.chemin_journal()).error(
+            "Perimetre invalide : %s", message)
+        details = "\n".join(f"• {probleme}" for probleme in problemes)
+        question = self._texte("perimetre.invalide").format(details=details)
+        if messagebox.askyesno(self._texte("commun.information"), question):
+            self._restaurer_perimetre()
+
+    def _restaurer_perimetre(self) -> None:
+        """Met le fichier fautif de côté et repart des valeurs d'exemple du moteur."""
+        chemin = configuration.chemin_perimetre(self.dossier)
+        if chemin.exists():
+            try:
+                chemin.replace(chemin.with_name(chemin.name + ".invalide"))
+            except OSError:                 # fichier verrouillé : on l'écrasera de toute façon
+                pass
+        self.perimetre = {}
+        configuration.enregistrer_perimetre(self.dossier, {})
+        self.brouillon["perimetre_restaure"] = True
 
     # --- utilitaires -------------------------------------------------------
     def _titre(self, base: int) -> tuple[str, int, str]:
@@ -686,6 +719,7 @@ class Application:
                lambda: self._lancer("liens", preflight=False), 1, 1)
         bouton(boutons, self._texte("panneau.journal"), self._ouvrir_journal, 1, 2)
         bouton(boutons, self._texte("panneau.diagnostic"), self._ouvrir_diagnostic, 2, 0)
+        bouton(boutons, self._texte("panneau.historique"), self._ouvrir_historique, 2, 1)
 
         # Activité : une barre indéterminée et une phrase qui dit combien de temps ça prend.
         # Sans elles, « Lancer maintenant » ne montrait rien pendant quatre minutes.
@@ -776,10 +810,8 @@ class Application:
         self._en_cours = False
         self._afficher_activite(False)
         self._activer_boutons(True)
-        libelles = {"ok": "OK", "erreur": "erreur", "reseau": "reseau indisponible",
-                    "deja_en_cours": "deja en cours"}
         self._afficher_statut(f"{self._texte('panneau.statut')} : "
-                              f"{libelles.get(statut, statut)} ({duree:.0f} s)")
+                              f"{self._libelle_statut(statut)} ({duree:.0f} s)")
 
     def _activer_boutons(self, actif: bool) -> None:
         for bouton in getattr(self, "boutons_action", []):
@@ -815,6 +847,44 @@ class Application:
         if chemin.exists():
             lignes = chemin.read_text(encoding="utf-8", errors="replace").splitlines()
             texte.insert("end", "\n".join(lignes[-800:]))
+
+    def _libelle_statut(self, statut: str) -> str:
+        """Les statuts du lanceur, dits dans la langue de l'interface."""
+        return self._texte(f"statut.{statut}") if f"statut.{statut}" in self.textes else statut
+
+    def _ouvrir_historique(self) -> None:
+        """Les sept derniers jours, en une table — plutôt que de fouiller le journal."""
+        fenetre = tk.Toplevel(self.racine)
+        fenetre.title(self._texte("histo.titre"))
+        fenetre.geometry("580x320")
+        cadre = ttk.Frame(fenetre, padding=10)
+        cadre.pack(fill="both", expand=True)
+
+        colonnes = ("date", "mode", "statut", "duree")
+        table = ttk.Treeview(cadre, columns=colonnes, show="headings")
+        for colonne, cle in zip(colonnes, ("histo.date", "histo.mode", "histo.statut",
+                                           "histo.duree")):
+            table.heading(colonne, text=self._texte(cle))
+        table.column("date", width=180)
+        table.column("mode", width=110)
+        table.column("statut", width=170)
+        table.column("duree", width=80, anchor="e")
+
+        entrees = historique.recentes()
+        for entree in entrees:
+            try:
+                duree = f"{float(entree.get('duree', 0)):.0f} s"
+            except (TypeError, ValueError):
+                duree = ""
+            table.insert("", "end", values=(str(entree.get("date", "")).replace("T", " "),
+                                            str(entree.get("mode", "")),
+                                            self._libelle_statut(str(entree.get("statut", ""))),
+                                            duree))
+        table.pack(fill="both", expand=True)
+        if not entrees:
+            ttk.Label(cadre, text=self._texte("histo.vide")).pack(anchor="w", pady=(8, 0))
+        ttk.Button(cadre, text=self._texte("commun.fermer"),
+                   command=fenetre.destroy).pack(anchor="e", pady=(8, 0))
 
     def _ouvrir_diagnostic(self) -> None:
         """Le diagnostic interroge le réseau et le serveur SMTP : il tourne hors du fil UI."""

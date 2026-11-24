@@ -114,6 +114,51 @@ def _fuseau_valide(nom: str | None) -> bool:
     return True
 
 
+def valider_perimetre(perimetre) -> list[str]:
+    """Contrôle strict du fichier de périmètre, avant que le moteur ne le découvre.
+
+    Le moteur refuse ce qu'il ne comprend pas, mais son message arrive au moment du run —
+    quatre minutes après le clic, dans le journal. Ici, on le dit à l'ouverture, en nommant
+    la section fautive.
+    """
+    if not isinstance(perimetre, dict):
+        return ["le fichier doit contenir un objet JSON"]
+
+    problemes: list[str] = []
+    for cle in perimetre:
+        if cle.startswith("_"):
+            continue                    # commentaire libre, toléré
+        if cle not in SECTIONS_PERIMETRE:
+            problemes.append(f"section inconnue : {cle}")
+
+    pays = perimetre.get("countries")
+    if pays is not None and not isinstance(pays, dict):
+        problemes.append("countries : objet attendu (code -> fiche)")
+
+    stack = perimetre.get("stack")
+    if stack is not None:
+        if not isinstance(stack, dict):
+            problemes.append("stack : objet attendu (nom -> liste de mots-clés)")
+        else:
+            for nom, mots in stack.items():
+                if not isinstance(nom, str) or not nom.strip():
+                    problemes.append("stack : nom de produit vide")
+                if (not isinstance(mots, list) or not mots
+                        or not all(isinstance(mot, str) and mot.strip() for mot in mots)):
+                    problemes.append(f"stack.{nom} : liste de mots-clés non vide attendue")
+
+    cibles = perimetre.get("targets")
+    if cibles is not None:
+        if not isinstance(cibles, list):
+            problemes.append("targets : liste attendue")
+        else:
+            for position, cible in enumerate(cibles):
+                if not isinstance(cible, str) or not cible.strip():
+                    problemes.append(f"targets[{position}] : texte non vide attendu")
+
+    return problemes
+
+
 def charger_perimetre(dossier: Path) -> dict:
     """Périmètre enregistré, ou {} : le moteur retombera alors sur ses valeurs par défaut."""
     chemin = chemin_perimetre(dossier)

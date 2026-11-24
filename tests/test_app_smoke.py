@@ -14,7 +14,7 @@ import tkinter as tk
 
 import pytest
 
-from secdailybrief import app, config, paths, secrets
+from secdailybrief import app, config, historique, paths, secrets
 
 pied_attendu = "Developed by Hormerty · © 2026"
 
@@ -254,6 +254,30 @@ def test_les_trois_langues_traduisent_les_memes_boutons(application):
                           ("nl", "Nu uitvoeren")):
         application._basculer_langue(code)
         assert application._texte("panneau.lancer") == attendu
+
+
+def test_la_fenetre_d_historique_liste_les_executions(application):
+    historique.enregistrer("ok", 42.0, "run")
+    application.afficher_panneau()
+
+    application._ouvrir_historique()
+
+    fenetres = [w for w in application.racine.winfo_children() if isinstance(w, tk.Toplevel)]
+    assert fenetres, "aucune fenêtre d'historique ouverte"
+    fenetres[-1].destroy()
+
+
+def test_un_perimetre_fautif_est_signale_et_restaure(application, monkeypatch):
+    """Le fichier fautif doit être nommé à l'ouverture, pas découvert au run."""
+    mauvais = config.chemin_perimetre(application.dossier)
+    mauvais.write_text('{"stack": ["box drive"]}', encoding="utf-8")
+    monkeypatch.setattr(app.messagebox, "askyesno", lambda *a, **k: True)
+
+    application._perimetre_en_attente = ["stack : objet attendu"]
+    application._signaler_perimetre()
+
+    assert config.charger_perimetre(application.dossier) == {}
+    assert (mauvais.with_name(mauvais.name + ".invalide")).exists()
 
 
 def test_le_panneau_donne_acces_aux_reglages(application):
