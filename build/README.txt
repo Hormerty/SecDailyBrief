@@ -1,87 +1,85 @@
 SecDailyBrief 1.1.0
 ===================
 
-Un rapport de veille cybersécurité par e-mail, tous les matins, composé à partir de
-sources publiques et adapté à votre stack. Aucun compte, aucune télémétrie.
+A daily cyber-security brief by e-mail, composed from public sources and adapted to your
+stack. No account, no telemetry.
 
-Ce programme ne surveille pas votre ordinateur. Il ne lit aucun de vos documents, ne
-capture rien et ne transmet rien à son auteur. Il télécharge des informations depuis des
-flux publics, les résume, puis envoie le résultat à l'adresse que vous avez choisie, via
-votre propre serveur de messagerie. Vos réglages restent sur ce poste et s'effacent d'un
-clic.
+This program does not monitor your computer. It reads none of your documents, captures
+nothing and transmits nothing to its author. It downloads information from public feeds,
+summarises it, then sends the result to the address you chose, through your own mail server.
+Your settings stay on this machine and are erased with one click.
 
-Le programme ne tourne pas en permanence : il se réveille, travaille une à deux minutes,
-puis s'arrête.
-
-
-DÉMARRAGE
----------
-
-1. Double-cliquez sur SecDailyBrief.exe.
-   Windows affichera peut-être « Windows a protégé votre PC » : le programme n'est pas
-   signé numériquement. Cliquez sur « Informations complémentaires » puis
-   « Exécuter quand même ».
-
-2. L'assistant demande la langue, puis votre adresse d'envoi.
-
-3. Pour Gmail, il faut un mot de passe d'application, pas votre mot de passe habituel :
-   https://myaccount.google.com/apppasswords
-   Cette page n'existe que si la validation en deux étapes est active sur votre compte.
-
-4. Le bouton « Tester l'envoi » vérifie la configuration avant d'enregistrer.
-
-5. À la fin, une tâche planifiée est créée pour l'heure choisie (06:00 par défaut).
+The program does not run continuously: it wakes up, works for one to two minutes, then
+stops.
 
 
-OÙ SONT MES DONNÉES
--------------------
-
-Dans %APPDATA%\SecDailyBrief :
-
-   config.json       vos réglages (adresses, heure, fuseau)
-   perimetre.json    les pays et produits que vous surveillez
-   secret.dpapi      le mot de passe, chiffré par Windows (illisible sur une autre machine)
-   journal.log       le journal des exécutions
-   historique.json   les dernières exécutions, en résumé (7 jours à l'écran)
-   seen.json, stats.db, ...   l'état du moteur
-
-Aucun de ces fichiers ne contient de mot de passe en clair. Le bouton « Supprimer toutes
-mes données » du panneau efface l'ensemble d'un clic.
-
-Le bouton « Historique » montre les sept derniers jours : date, mode, statut, durée.
-
-
-MODE PORTABLE
--------------
-
-L'archive dont le nom contient « portable » contient un fichier « portable.flag ». Tant
-qu'il est là, les données vivent dans un dossier « data » à côté de l'exécutable, et non
-dans votre profil Windows : le programme et vos réglages voyagent ensemble sur une clé USB.
-
-Supprimer « portable.flag » suffit à revenir au mode normal — les données existantes, elles,
-restent là où elles ont été écrites.
-
-
-DÉSINSTALLATION
+GETTING STARTED
 ---------------
 
-Lancez uninstall.ps1 (clic droit → « Exécuter avec PowerShell »). Il retire la tâche
-planifiée et propose de supprimer les données. Vous pouvez ensuite effacer ce dossier.
+1. Double-click SecDailyBrief.exe.
+   Windows may show "Windows protected your PC": the program is not code-signed. Click
+   "More info", then "Run anyway".
+
+2. The wizard asks for the language, then your sending address.
+
+3. For Gmail, you need an app password, not your usual password:
+   https://myaccount.google.com/apppasswords
+   That page only exists if two-step verification is enabled on your account.
+
+4. The "Test sending" button checks the configuration before saving it.
+
+5. At the end, a scheduled task is created for the time you chose (06:00 by default).
 
 
-EN CAS DE PROBLÈME
-------------------
+WHERE MY DATA LIVES
+-------------------
 
-Le bouton « Diagnostic » du panneau produit un rapport : dix vérifications (moteur,
-dépendances, certificats TLS, dossier, configuration, mot de passe, fuseau, réseau, SMTP,
-tâche planifiée). Copiez-le dans votre demande d'aide, il évite beaucoup d'allers-retours.
+In %APPDATA%\SecDailyBrief:
 
-Le journal complet se lit aussi dans le panneau, bouton « Journal ».
+   config.json       your settings (addresses, time, time zone)
+   perimetre.json    the countries and products you watch
+   secret.dpapi      the password, encrypted by Windows (unreadable on another machine)
+   journal.log       the log of every run
+   historique.json   the latest runs, summarised (seven days on screen)
+   seen.json, stats.db, ...   the engine's state
+
+None of these files holds a password in clear text. The "Delete all my data" button in the
+panel erases the whole set with one click.
+
+The "History" button shows the last seven days: date, mode, status, duration.
+
+
+PORTABLE MODE
+-------------
+
+The archive whose name contains "portable" contains a file named "portable.flag". As long as
+it is there, the data lives in a "data" folder next to the executable rather than in your
+Windows profile: the program and your settings travel together on a USB stick.
+
+Deleting "portable.flag" is enough to return to the normal mode — the existing data, however,
+stays where it was written.
+
+
+UNINSTALLING
+------------
+
+Run uninstall.ps1 (right-click, "Run with PowerShell"). It removes the scheduled task and
+offers to delete the data. You can then delete this folder.
+
+
+IF SOMETHING GOES WRONG
+-----------------------
+
+The "Diagnostic" button in the panel produces a report: ten checks (engine, dependencies, TLS
+certificates, data folder, configuration, password, time zone, network, SMTP, scheduled
+task). Paste it into your support request; it saves a lot of back and forth.
+
+The full log can also be read in the panel, through the "Log" button.
 
 
 LICENCE
 -------
 
-MIT — voir LICENSE. Logiciel fourni sans garantie.
+MIT — see LICENSE. Software provided without warranty.
 
-Développé par Hormerty · © 2026
+Developed by Hormerty · © 2026
