@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.1 — 24 November 2026
+
+### Fixed
+
+- The `README.txt` inside the archive announced version 1.1.0 in the 1.2.0 package. The
+  title is now written by the build script from the package version, and the script reads
+  the copied file back before packaging: a line maintained by hand does not follow the
+  version, and this one did not.
+
 ## 1.2.0 — 24 November 2026
 
 ### Added

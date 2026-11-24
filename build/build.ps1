@@ -76,7 +76,15 @@ if ((Get-Item $exe).Length -lt 1MB) {
 # Assemblage de l'archive : le binaire, mais aussi ce qui permet de desinstaller et de
 # comprendre ce qu'on vient d'installer.
 $sortie = Join-Path $sortieBase "dist\SecDailyBrief"
-Copy-Item "build\README.txt" $sortie -Force
+# Le titre du README.txt annonce la version. Il a annoncé 1.1.0 dans l'archive 1.2.0, parce
+# qu'une ligne écrite à la main ne suit pas. Le script écrit désormais celle du paquet, puis
+# relit le fichier copié : ce qui est dans l'archive est ce qui est vérifié.
+$modele = [IO.File]::ReadAllText((Join-Path $racine "build\README.txt"), [Text.Encoding]::UTF8)
+$modele = $modele -replace 'SecDailyBrief \d+\.\d+\.\d+', "SecDailyBrief $versionPaquet"
+[IO.File]::WriteAllText((Join-Path $sortie "README.txt"), $modele, (New-Object Text.UTF8Encoding $false))
+if (-not (Select-String -Path (Join-Path $sortie "README.txt") -Pattern "SecDailyBrief $versionPaquet" -Quiet)) {
+    throw "README.txt n'annonce pas la version $versionPaquet."
+}
 Copy-Item "build\uninstall.ps1" $sortie -Force
 Copy-Item "LICENSE" $sortie -Force
 Copy-Item "CHANGELOG.md" $sortie -Force
