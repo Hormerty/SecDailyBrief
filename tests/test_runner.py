@@ -145,3 +145,11 @@ def test_une_trace_python_du_moteur_est_journalisee_en_erreur(tmp_path, monkeypa
     contenu = (tmp_path / "journal.log").read_text(encoding="utf-8")
     assert "ERROR" in contenu
     assert "Moteur termine en erreur" in contenu
+
+def test_le_decodeur_accepte_utf8_et_cp1252():
+    """Le journal affichait « NVD (�diteurs) » : les deux encodages doivent être lus."""
+    texte = "NVD (éditeurs): 8 new"
+
+    assert runner._decoder(texte.encode("utf-8")) == texte
+    assert runner._decoder(texte.encode("cp1252")) == texte
+    assert runner._decoder(b"ascii seulement") == "ascii seulement"

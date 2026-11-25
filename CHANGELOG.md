@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.4.1 — 25 November 2026
+
+### Added
+
+- **Nine national CERT feeds** reach the application: Italy, Luxembourg, Austria, Norway,
+  Finland, Hungary, Romania, Slovakia and Spain. Their titles are translated to English —
+  eleven phrase tables, plus pattern rewriting where the product sits in the middle of the
+  sentence (Hungarian, Romanian, Slovak).
+- The **first `SHA256SUMS` file** is attached by the release workflow: one file, produced from
+  the archives themselves, instead of checksums typed into the release notes.
+
+### Changed
+
+- The engine is re-pinned to `92e752d`, which carries the CERT work, the corrected source
+  error messages, and `SOURCES.md` — the inventory of which CERT is covered and why the others
+  are not.
+
+### Fixed
+
+- An accented character from the engine lost its accent in the journal (`NVD (�diteurs)`). The
+  child's output is decoded as UTF-8, then as the Windows code page when that fails, instead
+  of being replaced silently.
+- A source in error now says **why** — "délai dépassé", "injoignable", "HTTP 403" — instead of
+  pasting a Python exception into the daily mail.
+
 ## 1.4.0 — 24 November 2026
 
 ### Added

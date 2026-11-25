@@ -142,6 +142,20 @@ def _niveau(ligne: str) -> int:
     return _NIVEAUX.get(ligne.split(" ", 1)[0].upper(), logging.INFO)
 
 
+def _decoder(brut: bytes) -> str:
+    """Décode une ligne du moteur, en UTF-8 ou, à défaut, dans le code page de Windows.
+
+    Le journal affichait « NVD (�diteurs) » : l'accent du moteur arrivait dans un encodage que
+    le décodage UTF-8 strict ne reconnaissait pas, et le remplacement muet produisait U+FFFD.
+    On essaie l'UTF-8 d'abord — c'est ce que PYTHONIOENCODING demande — puis on retombe sur
+    cp1252, qui est ce que Windows écrit quand la consigne n'est pas suivie.
+    """
+    try:
+        return brut.decode("utf-8")
+    except UnicodeDecodeError:
+        return brut.decode("cp1252", "replace")
+
+
 def executer(config: dict, mot_de_passe: str, journal: logging.Logger, *,
              mode: str = "run", dossier: Path | None = None,
              preflight: bool = True) -> Resultat:
@@ -171,7 +185,7 @@ def executer(config: dict, mot_de_passe: str, journal: logging.Logger, *,
         lignes: list[str] = []
         assert processus.stdout is not None
         for brut in processus.stdout:
-            ligne = brut.decode("utf-8", "replace").rstrip("\r\n")
+            ligne = _decoder(brut).rstrip("\r\n")
             if not ligne:
                 continue
             lignes.append(ligne)
