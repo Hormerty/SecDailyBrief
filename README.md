@@ -7,9 +7,9 @@ This Windows application drives the watch engine of the
 modifying it**: the engine is fetched at a pinned commit, its checksum is verified, and the
 configuration is injected from the outside.
 
-> **Version 1.4.1** — in two archives:
-> `SecDailyBrief-1.4.1-win64.zip` (data in the Windows profile) and
-> `SecDailyBrief-1.4.1-win64-portable.zip` (data beside the executable).
+> **Version 1.4.2** — in two archives:
+> `SecDailyBrief-1.4.2-win64.zip` (data in the Windows profile) and
+> `SecDailyBrief-1.4.2-win64-portable.zip` (data beside the executable).
 > The interface speaks French, English, Dutch, German, Spanish, Italian, Portuguese, Hindi and Chinese.
 
 ## Installation
@@ -46,7 +46,7 @@ Three ways out, in order of preference:
    produced by the build itself:
 
    ```powershell
-   Get-FileHash .\SecDailyBrief-1.4.1-win64.zip -Algorithm SHA256
+   Get-FileHash .\SecDailyBrief-1.4.2-win64.zip -Algorithm SHA256
    ```
 
    Compare it with the line in `SHA256SUMS`. Download only from the

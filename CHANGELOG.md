@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.2 — 25 November 2026
+
+### Added
+
+- **NCSC Ireland** joins the national CERT feeds. It publishes in English, with CVE
+  identifiers, which makes it the simplest source added so far: no phrase table, no
+  translation to keep up.
+
 ## 1.4.1 — 25 November 2026
 
 ### Added
