@@ -121,3 +121,32 @@ def test_collecter_de_bout_en_bout_avec_des_sondes(tmp_path):
         tache_existe=lambda: True, prochaine=lambda: "2026-11-24T06:00:00")
     echecs = [v.nom for v in verifications if v.statut == doctor.ECHEC]
     assert echecs == [], echecs
+
+def test_une_erreur_imprevue_ne_sort_pas_en_trace(monkeypatch):
+    """PyInstaller affichait « Unhandled exception in script » : on journalise et on rend 1."""
+    from secdailybrief import __main__ as point_entree
+    from secdailybrief import doctor
+
+    signales = []
+    monkeypatch.setattr(point_entree, "_signaler", signales.append)
+
+    def tombe():
+        raise OSError("Could not find a suitable TLS CA certificate bundle")
+
+    monkeypatch.setattr(doctor, "executer", tombe)
+
+    assert point_entree.main(["--doctor"]) == 1
+    assert len(signales) == 1
+    assert isinstance(signales[0], OSError)
+
+
+def test_le_doctor_signale_un_paquet_de_certificats_absent(monkeypatch, tmp_path):
+    """Le diagnostic doit nommer le problème, pas seulement échouer."""
+    from secdailybrief import doctor
+
+    monkeypatch.setattr("certifi.where", lambda: str(tmp_path / "absent.pem"))
+
+    verification = doctor.verifier_certificats()
+
+    assert verification.statut != "ok"
+    assert "cacert.pem" in verification.detail

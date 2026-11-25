@@ -49,7 +49,46 @@ def _executer(mode: str) -> int:
     return 0 if resultat.statut == "ok" else 1
 
 
+def _signaler(erreur: Exception) -> None:
+    """Dit à l'utilisateur que l'application s'est arrêtée, sans lui montrer une trace.
+
+    PyInstaller affiche sinon sa propre boîte « Unhandled exception in script », qui aligne
+    trente lignes de frames et se termine par un chemin interne — illisible pour qui voulait
+    juste lancer un rapport.
+    """
+    message = (
+        "SecDailyBrief s'est arrete sur une erreur inattendue.\n\n"
+        f"{type(erreur).__name__} : {erreur}\n\n"
+        f"Le detail est dans le journal :\n{paths.chemin_journal()}"
+    )
+    try:
+        import tkinter as tk
+        from tkinter import messagebox
+
+        racine = tk.Tk()
+        racine.withdraw()
+        messagebox.showerror("SecDailyBrief", message)
+        racine.destroy()
+    except Exception:            # noqa: BLE001 - pas d'affichage : la console suffira
+        print(message, file=sys.stderr)
+
+
 def main(argv: list[str] | None = None) -> int:
+    try:
+        return _main(argv)
+    except SystemExit:
+        raise
+    except Exception as exc:     # noqa: BLE001 - filet global : rien ne doit sortir en trace
+        try:
+            logging_setup.journaliser(paths.chemin_journal()).exception(
+                "Echec inattendu : %s", exc)
+        except Exception:        # noqa: BLE001 - journaliser ne doit pas masquer l'erreur
+            pass
+        _signaler(exc)
+        return 1
+
+
+def _main(argv: list[str] | None = None) -> int:
     parseur = argparse.ArgumentParser(prog="SecDailyBrief", add_help=True)
     parseur.add_argument("--run", action="store_true", help="executer la veille et envoyer")
     parseur.add_argument("--preview", action="store_true", help="ecrire un apercu sans envoyer")

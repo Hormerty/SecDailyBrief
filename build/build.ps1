@@ -42,6 +42,12 @@ if ($LASTEXITCODE -ne 0) { throw "Le moteur ne correspond pas au verrou." }
 # (feedparser, sqlite3, requests...) et embarque tout. Sans cela, l'analyse ne voyait que
 # l'application, et le premier binaire livre demarrait avec un moteur inimportable.
 
+# Le paquet de certificats est ajoute explicitement. PyInstaller le collecte d'habitude avec
+# --collect-data, mais il a deja produit un dossier certifi vide : l'application livree tombait
+# alors sur « Could not find a suitable TLS CA certificate bundle » au premier appel reseau.
+$cacert = & $python -c "import certifi; print(certifi.where())"
+if (-not (Test-Path $cacert)) { throw "cacert.pem introuvable dans l'environnement : $cacert" }
+
 & $python -m PyInstaller `
     --noconfirm `
     --clean `
@@ -58,6 +64,7 @@ if ($LASTEXITCODE -ne 0) { throw "Le moteur ne correspond pas au verrou." }
     --version-file "build\version.txt" `
     --add-data "vendor;vendor" `
     --add-data "assets;assets" `
+    --add-data "$cacert;certifi" `
     main.py
 
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller a echoue." }
@@ -71,6 +78,13 @@ if (-not (Test-Path $exe)) {
 }
 if ((Get-Item $exe).Length -lt 1MB) {
     throw "Executable suspect : $((Get-Item $exe).Length) octets."
+}
+
+# Garde-fou sur les donnees embarquees : un binaire sans paquet de certificats ne peut joindre
+# aucune source HTTPS. Le defaut ne se voit pas a l'oeil et casse tout au premier lancement.
+$cacertEmbarque = Join-Path $sortieBase "dist\SecDailyBrief\_internal\certifi\cacert.pem"
+if (-not (Test-Path $cacertEmbarque)) {
+    throw "cacert.pem absent du binaire : $cacertEmbarque"
 }
 
 # Assemblage de l'archive : le binaire, mais aussi ce qui permet de desinstaller et de

@@ -58,7 +58,9 @@ def reseau_disponible(urls=URLS_TEMOIN, delai: int = DELAI_SONDE,
             try:
                 reponse = requests.get(url, timeout=delai,
                                        headers={"User-Agent": "SecDailyBrief"})
-            except requests.RequestException:
+            # OSError couvre le cas où le paquet de certificats manque : ssl lève un OSError,
+            # pas une RequestException, et la sonde faisait tomber l'application entière.
+            except (requests.RequestException, OSError):
                 continue
             if reponse.status_code < 400:
                 return True

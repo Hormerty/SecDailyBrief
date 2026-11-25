@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.3 — 25 November 2026
+
+### Added
+
+- **Ubuntu and Red Hat** join the collected sources, the first distributions in the engine. A
+  brief answering "is this version affected" was silent on the two platforms most server fleets
+  run. Ubuntu publishes a numbered advisory feed; Red Hat publishes none, so the engine queries
+  its security data API and keeps the CVEs published inside the window.
+
+### Fixed
+
+- The ENISA EUVD source pasted its raw exception into the daily error line; it now uses the
+  same short reason as every other source.
+
 ## 1.4.2 — 25 November 2026
 
 ### Added
