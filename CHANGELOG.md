@@ -9,6 +9,12 @@
   run. Ubuntu publishes a numbered advisory feed; Red Hat publishes none, so the engine queries
   its security data API and keeps the CVEs published inside the window.
 
+### Changed
+
+- A KEV entry now opens its detail with the **CISA remediation deadline** when the catalogue
+  gives one, and with the first two CWEs otherwise. Both fields were fetched and cached, and
+  neither reached the report.
+
 ### Fixed
 
 - The ENISA EUVD source pasted its raw exception into the daily error line; it now uses the
