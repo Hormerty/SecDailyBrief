@@ -96,3 +96,21 @@ def dossier_donnees() -> Path | None:
     base = os.environ.get("XDG_DATA_HOME")
     racine = Path(base) if base else Path.home() / ".local" / "share"
     return racine / "SecDailyBrief"
+
+
+def dans_wsl() -> bool:
+    """Vrai si l'on tourne dans WSL : la distribution s'arrete quand rien ne tourne."""
+    try:
+        return "microsoft" in Path("/proc/version").read_text(encoding="utf-8").lower()
+    except OSError:
+        return False
+
+
+def linger_actif() -> bool:
+    """Vrai si le gestionnaire systemd de l'utilisateur survit a la fermeture de session."""
+    utilisateur = os.environ.get("USER") or os.environ.get("LOGNAME") or ""
+    if not utilisateur:
+        return False
+    resultat = subprocess.run(["loginctl", "show-user", utilisateur, "-p", "Linger"],
+                              capture_output=True, text=True, check=False)
+    return resultat.stdout.strip().lower() == "linger=yes"

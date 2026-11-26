@@ -104,3 +104,12 @@ def verrou_instance(nom: str = NOM_PAR_DEFAUT):
 def dossier_donnees() -> Path | None:
     """Windows garde sa logique historique : profil utilisateur, ou portable."""
     return None
+
+
+def dans_wsl() -> bool:
+    return False
+
+
+def linger_actif() -> bool:
+    """Sans objet sous Windows : le Planificateur tourne comme service, pas par session."""
+    return True

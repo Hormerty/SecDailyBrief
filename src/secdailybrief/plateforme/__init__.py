@@ -22,5 +22,8 @@ chiffrer = impl.chiffrer
 dechiffrer = impl.dechiffrer
 verrou_instance = impl.verrou_instance
 dossier_donnees = impl.dossier_donnees
+dans_wsl = impl.dans_wsl
+linger_actif = impl.linger_actif
 
-__all__ = ["nom", "chiffrer", "dechiffrer", "verrou_instance", "dossier_donnees"]
+__all__ = ["nom", "chiffrer", "dechiffrer", "verrou_instance", "dossier_donnees",
+           "dans_wsl", "linger_actif"]

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.7.1 — 26 November 2026
+
+### Added
+
+- The diagnostic gained an eleventh check on Linux: **does the user systemd manager outlive the
+  session?** A timer for 06:00 is installed, enabled and reported "active" — and never fires,
+  because `systemctl --user` stops its manager as soon as no session is open. `Linger=no` is
+  silent, so the check says it, with the command that fixes it
+  (`loginctl enable-linger <user>`).
+- Inside WSL the check takes another tone: the distribution stops itself when nothing runs, so
+  no setting makes scheduling reliable there. WSL is a place to test, not to plan.
+
 ## 1.7.0 — 26 November 2026
 
 ### Added

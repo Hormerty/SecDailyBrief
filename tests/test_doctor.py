@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 
 from secdailybrief import doctor
+from secdailybrief.doctor import AVERTISSEMENT, OK
 
 CONFIG = {
     "email_user": "bot@example.com",
@@ -150,3 +151,37 @@ def test_le_doctor_signale_un_paquet_de_certificats_absent(monkeypatch, tmp_path
 
     assert verification.statut != "ok"
     assert "cacert.pem" in verification.detail
+
+# --- Session systemd : les timers partent-ils sans session ouverte ? -----------------------
+
+def test_la_session_linux_signale_un_linger_inactif():
+    """Un timer de 06:00 ne part jamais si le gestionnaire utilisateur s'arrête."""
+    verification = doctor.verifier_session_linux(linger=lambda: False, wsl=lambda: False)
+
+    assert verification.statut == AVERTISSEMENT
+    assert "loginctl enable-linger" in verification.detail
+
+
+def test_la_session_linux_est_verte_avec_linger():
+    verification = doctor.verifier_session_linux(linger=lambda: True, wsl=lambda: False)
+
+    assert verification.statut == OK
+    assert "sans session ouverte" in verification.detail
+
+
+def test_wsl_est_signale_comme_impropre_a_la_planification():
+    """WSL arrête la distribution : aucun réglage ne rend les timers fiables."""
+    verification = doctor.verifier_session_linux(linger=lambda: True, wsl=lambda: True)
+
+    assert verification.statut == AVERTISSEMENT
+    assert "WSL" in verification.detail
+
+
+def test_la_verification_survit_a_un_systemd_absent():
+    def tombe():
+        raise OSError("systemctl introuvable")
+
+    verification = doctor.verifier_session_linux(linger=tombe, wsl=lambda: False)
+
+    assert verification.statut == AVERTISSEMENT
+    assert "systemctl introuvable" in verification.detail

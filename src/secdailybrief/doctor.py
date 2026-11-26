@@ -8,13 +8,14 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from . import config as configuration
-from . import engine, logging_setup, mail, paths, runner, schedule, secrets
+from . import engine, logging_setup, mail, paths, plateforme, runner, schedule, secrets
 
 OK = "ok"
 AVERTISSEMENT = "avertissement"
@@ -162,6 +163,36 @@ def verifier_planificateur(existe=None, prochaine=None, existe_alerte=None) -> V
                         f"prochaine execution : {moment or 'inconnue'} · {alerte}")
 
 
+def verifier_session_linux(linger=None, wsl=None) -> Verification:
+    """Les timers systemd ne partent que si le gestionnaire utilisateur tourne.
+
+    Sous Linux, `systemctl --user` arrête son gestionnaire dès qu'aucune session n'est ouverte.
+    Un timer de 06:00 ne se déclenche alors jamais, sans que rien ne le signale : la tâche
+    existe, elle est active, et elle ne part pas. `loginctl enable-linger` corrige cela.
+
+    Dans WSL, la distribution s'arrête d'elle-même après quelques secondes d'inactivité : aucun
+    réglage ne rend la planification fiable. Le dire vaut mieux que de le laisser découvrir.
+    """
+    linger = linger if linger is not None else plateforme.linger_actif
+    wsl = wsl if wsl is not None else plateforme.dans_wsl
+    try:
+        dans_wsl = bool(wsl())
+        actif = bool(linger())
+    except Exception as exc:              # noqa: BLE001 - systemd absent ou refusant
+        return Verification("Session systemd", AVERTISSEMENT, f"{type(exc).__name__}: {exc}")
+    if dans_wsl:
+        return Verification("Session systemd", AVERTISSEMENT,
+                            "WSL arrete la distribution quand rien ne tourne : "
+                            "les timers ne partiront pas seuls")
+    if actif:
+        return Verification("Session systemd", OK,
+                            "linger actif : les timers partent sans session ouverte")
+    utilisateur = os.environ.get("USER") or os.environ.get("LOGNAME") or "<utilisateur>"
+    return Verification("Session systemd", AVERTISSEMENT,
+                        f"linger inactif : les timers ne partiront pas sans session "
+                        f"ouverte (loginctl enable-linger {utilisateur})")
+
+
 def collecter(dossier: Path | None = None, *, reglages: dict | None = None,
               jetons: dict | None = None, tester_reseau=None,
               tester_smtp=None, tache_existe=None, prochaine=None) -> list[Verification]:
@@ -180,6 +211,7 @@ def collecter(dossier: Path | None = None, *, reglages: dict | None = None,
         verifier_reseau(tester_reseau),
         verifier_smtp(reglages, mot_de_passe, tester_smtp),
         verifier_planificateur(tache_existe, prochaine),
+        *([verifier_session_linux()] if sys.platform != "win32" else []),
     ]
 
 
