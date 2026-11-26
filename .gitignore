@@ -17,3 +17,6 @@ data/
 # Aperçus produits en développement
 preview.html
 preview.txt
+# Scripts de verification locaux (WSL)
+.tmp/
+.venv-linux/

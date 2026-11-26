@@ -180,6 +180,8 @@ def prochaine_execution(nom: str = NOM_TACHE) -> str | None:
     `schtasks /Query` renvoie des libellés traduits (« Prochaine exécution » en français) :
     les analyser serait fragile. Les propriétés PowerShell, elles, ne changent pas.
     """
+    if sys.platform != "win32":
+        return _linux().prochaine_execution(nom)
     commande = ["powershell", "-NoProfile", "-NonInteractive", "-Command",
                 f"(Get-ScheduledTaskInfo -TaskName '{nom}').NextRunTime.ToString('o')"]
     resultat = subprocess.run(commande, capture_output=True, text=True,

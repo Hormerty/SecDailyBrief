@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -87,7 +88,12 @@ def verifier_dossier(dossier: Path) -> Verification:
         return Verification("Dossier de donnees", ECHEC, str(exc))
     # Le mode compte : en portable, les donnees voyagent avec le programme et disparaissent
     # si l'on efface le dossier. Le dire evite de croire qu'une sauvegarde est faite ailleurs.
-    mode = "portable" if paths.est_portable() else "profil Windows"
+    if paths.est_portable():
+        mode = "portable"
+    elif sys.platform == "win32":
+        mode = "profil Windows"
+    else:
+        mode = "profil utilisateur"
     return Verification("Dossier de donnees", OK, f"{dossier} ({mode})")
 
 
