@@ -8,7 +8,7 @@
 
 A daily security brief by e-mail, built for your own stack.
 
-![The first-run wizard](docs/wizard.png)
+![The control panel](docs/panel.png)
 
 ## What it does
 
@@ -33,6 +33,36 @@ lists every source, and every candidate examined and refused with its measuremen
 
 The program does not run continuously: it wakes up, works for one to two minutes, then
 stops. No account, no intermediary server, no telemetry.
+
+## Why not an RSS reader?
+
+You could follow the same feeds in Inoreader or FreshRSS. Three things would be missing.
+
+- **The titles stay in their original language.** A CERT-FR advisory arrives in French, a CERT-SL
+  one in Slovenian, a SK-CERT one in Slovak. A reader shows them as published; this program
+  rewrites the advisory formulas — from tables written on real titles, so a product name survives
+  — and translates the dates inside the title too.
+- **"Known exploited" is not a date.** Every CISA KEV entry carries its remediation deadline, and
+  the ranking uses the CISA SSVC decision — exploitation, automatable, technical impact — rather
+  than publication order.
+- **A feed does not know your stack.** The products you list decide what rises to the first
+  screen, and an advisory touching one of them triggers an alert within three hours instead of
+  waiting for the morning.
+
+A reader shows you everything and lets you decide. This program decides what deserves the first
+screen — and says why.
+
+## Installation
+
+1. Download an archive from the [published releases](../../releases/latest) — `win64` or
+   `linux-x86_64`, each in a normal and a portable variant.
+2. Extract it wherever you like, then run `SecDailyBrief` (`SecDailyBrief.exe` on Windows).
+3. The wizard asks for your language, your sending address and an app password — not your usual
+   password. For Gmail: <https://myaccount.google.com/apppasswords>.
+4. **Test sending** checks the configuration before saving it, then **Finish** creates the
+   scheduled task — the Windows Task Scheduler, or a systemd timer on Linux.
+
+![The first-run wizard](docs/wizard.png)
 
 ## Principles
 
