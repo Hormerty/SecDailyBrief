@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.4 — 26 November 2026
+
+### Added
+
+- **CISA SSVC decisions** now drive the ranking. The engine used to infer exploitation from
+  wording — "exploitation active", "dans la nature" — and missed any source phrasing it
+  differently. CISA Vulnrichment states it per CVE: Exploitation (none / poc / active),
+  Automatable, Technical Impact. Entries carrying an `active` decision gain five points and a
+  ⚔️ badge, a proof of concept two points and 🧪, automatable and total impact one point each.
+  On the first real run: 27 CVEs read, 12 articles raised.
+
+The lookup is bounded to forty CVEs per run, taken from the highest-scoring articles, and
+cached — including "the CISA has not ruled", so a silent CVE is not asked twice.
+
 ## 1.4.3 — 25 November 2026
 
 ### Added
