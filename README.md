@@ -6,8 +6,7 @@
 [![platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-informational)](#installation)
 [![languages](https://img.shields.io/badge/interface-9%20languages-informational)](#what-it-does)
 
-**A daily security brief by e-mail, built for your own stack.**
-Every entry links back to the advisory it came from — nothing is summarised for you.
+**124 feeds in, one e-mail out. Every line traced to its source.**
 
 ![The control panel](docs/panel.png)
 
