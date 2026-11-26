@@ -4,4 +4,11 @@
 *.py              text eol=lf
 *.md              text eol=lf
 *.txt             text eol=lf
+# Les scripts shell doivent rester en LF : bash lit « pipefail\r » comme une option
+# inexistante et refuse de démarrer. Constaté sur build/build.sh le 26 novembre.
+*.sh              text eol=lf
+*.yml             text eol=lf
+*.yaml            text eol=lf
+*.ps1             text eol=crlf
+*.psm1            text eol=crlf
 vendor/veille.py  -text
