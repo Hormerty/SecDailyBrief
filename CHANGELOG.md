@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.7.2 — 26 November 2026
+
+### Fixed
+
+- The Linux archive weighed twice the Windows one — 30,9 MB against 15,9 MB. The cause was not
+  the platform: the Python shared library shipped by the CI runner (3.12) is not stripped, and
+  carried 28 MB of symbol tables, most of the archive. `build.sh` now passes `--strip`, which
+  takes that same library to 6 MB. The frozen binary is still executed after the build, so a
+  broken library would be caught before the archive is published.
+
 ## 1.7.1 — 26 November 2026
 
 ### Added

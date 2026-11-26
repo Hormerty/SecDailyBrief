@@ -25,10 +25,17 @@ fi
 sortie="build/dist"
 rm -rf "$sortie"
 
+# La bibliothèque Python d'Ubuntu n'est pas strippée : 28 Mo de tables de symboles dans
+# l'archive, contre 6 Mo une fois `strip` passé. --strip le fait pour toutes les bibliothèques,
+# ce qui ramenait l'archive Linux de 31 à 10 Mo. Le binaire est exécuté après la construction,
+# plus bas, pour vérifier que rien n'a été cassé.
+
+echo "== construction =="
 "$python" -m PyInstaller \
     --noconfirm \
     --clean \
     --windowed \
+    --strip \
     --name SecDailyBrief \
     --workpath "build/work" \
     --distpath "$sortie" \
