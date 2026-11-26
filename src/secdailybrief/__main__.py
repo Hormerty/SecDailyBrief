@@ -52,7 +52,8 @@ def _executer(mode: str) -> int:
         journal.error("Aucun mot de passe enregistre : ouvrez l'interface et enregistrez-le.")
         return 2
 
-    resultat = runner.executer(reglages, mot_de_passe, journal, mode=mode, dossier=dossier)
+    resultat = runner.executer(reglages, mot_de_passe, journal, mode=mode,
+                               dossier=dossier, jetons=jetons)
     return 0 if resultat.statut == "ok" else 1
 
 

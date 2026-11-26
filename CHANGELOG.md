@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.6.0 — 26 November 2026
+
+### Added
+
+- **Alerts can now reach Slack, Discord or Telegram**, not only the mailbox. Each channel is a
+  checkbox of its own, and the wizard grew the fields they need: a webhook URL for Slack and
+  Discord, a bot token and a chat id for Telegram.
+- The chat message is short by design — a heading, one line per flaw with its score and source,
+  the link underneath, and how many remain for the next pass. The daily report stays on mail: a
+  144 KB digest in a chat window would only be scrolled past.
+- Webhooks travel in the same DPAPI file as the SMTP password, never in `config.json`, because a
+  webhook URL is enough to post.
+
+### Notes
+
+- If the mailbox is unchecked while no webhook is configured, the mail takes over again: a lost
+  alert is worse than a redundant one.
+- Slack wants `{"text": …}`, Discord wants `{"content": …}`, Telegram wants a token and a chat
+  id — three shapes for one message, each covered by a test.
+
 ## 1.5.1 — 26 November 2026
 
 ### Changed

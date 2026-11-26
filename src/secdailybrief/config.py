@@ -36,6 +36,11 @@ DEFAUTS: dict = {
     "heure": "06:00",
     # Alerte immediate toutes les trois heures, en plus du rapport quotidien.
     "alertes_immediates": True,
+    # Canaux de l'alerte : le courriel par defaut, les discussions sur demande.
+    "alerte_mail": True,
+    "alerte_slack": False,
+    "alerte_discord": False,
+    "alerte_telegram": False,
     "taille_texte": 10,
     # Un consentement donné une fois n'a pas à être redemandé à chaque retour sur la page.
     "consentement": False,

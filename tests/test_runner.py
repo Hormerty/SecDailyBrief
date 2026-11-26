@@ -195,3 +195,37 @@ def test_le_mode_alerte_appelle_bien_la_fonction_d_alerte_du_moteur(monkeypatch)
     assert appels == ["alerte"]
     assert point_entree.executer_moteur("rapport") == 0
     assert appels == ["alerte", "rapport"]
+
+
+# --- Canaux d'alerte : courriel, Slack, Discord, Telegram -----------------------------------
+
+def test_les_canaux_suivent_les_cases_et_les_secrets():
+    config = {"alerte_slack": True, "alerte_discord": False, "alerte_telegram": True}
+    jetons = {"slack_webhook": "https://hooks.slack.com/x",
+              "telegram_token": "T", "telegram_chat": "42"}
+
+    cibles = runner.canaux_alerte(config, jetons)
+
+    assert [c["type"] for c in cibles] == ["slack", "telegram"]
+    assert cibles[0]["url"].startswith("https://hooks.slack.com/")
+    assert cibles[1]["chat"] == "42"
+
+
+def test_une_case_cochee_sans_secret_ne_cree_pas_de_canal():
+    """Cocher Slack sans webhook ne doit pas produire un canal vide."""
+    config = {"alerte_slack": True, "alerte_discord": True, "alerte_telegram": True}
+
+    assert runner.canaux_alerte(config, {}) == []
+
+
+def test_l_environnement_porte_les_webhooks_et_le_choix_du_courriel(tmp_path):
+    config = dict(CONFIG)
+    config.update({"alerte_mail": False, "alerte_slack": True})
+    jetons = {"slack_webhook": "https://hooks.slack.com/x"}
+
+    env = runner.environnement(config, "motdepasse", tmp_path, jetons)
+
+    assert env["ALERT_MAIL"] == "0"
+    assert "hooks.slack.com" in env["WEBHOOKS"]
+    # Aucun secret ne doit fuir dans une variable héritée du shell.
+    assert "EMAIL_PASSWORD" in env and env["EMAIL_PASSWORD"] == "motdepasse"

@@ -14,6 +14,7 @@ y sont volontaires :
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
 import subprocess
@@ -67,7 +68,26 @@ def reseau_disponible(urls=URLS_TEMOIN, delai: int = DELAI_SONDE,
     return False
 
 
-def environnement(config: dict, mot_de_passe: str, dossier: Path) -> dict[str, str]:
+def canaux_alerte(config: dict, jetons: dict[str, str] | None = None) -> list[dict]:
+    """Canaux de discussion actifs, sous la forme attendue par le moteur (variable WEBHOOKS).
+
+    Le webhook *est* le secret : l'URL suffit à publier. Il est donc rangé avec le mot de
+    passe SMTP, chiffré par DPAPI, et jamais dans config.json.
+    """
+    jetons = jetons or {}
+    cibles: list[dict] = []
+    if config.get("alerte_slack") and jetons.get("slack_webhook"):
+        cibles.append({"type": "slack", "url": jetons["slack_webhook"]})
+    if config.get("alerte_discord") and jetons.get("discord_webhook"):
+        cibles.append({"type": "discord", "url": jetons["discord_webhook"]})
+    if config.get("alerte_telegram") and jetons.get("telegram_token") and jetons.get("telegram_chat"):
+        cibles.append({"type": "telegram", "token": jetons["telegram_token"],
+                       "chat": jetons["telegram_chat"]})
+    return cibles
+
+
+def environnement(config: dict, mot_de_passe: str, dossier: Path,
+                  jetons: dict[str, str] | None = None) -> dict[str, str]:
     """Environnement du processus enfant, construit explicitement.
 
     Les variables EMAIL_* et SMTP_* héritées du shell sont retirées : sur un poste de
@@ -75,7 +95,7 @@ def environnement(config: dict, mot_de_passe: str, dossier: Path) -> dict[str, s
     saurait plus quelle configuration a réellement servi.
     """
     env = {cle: valeur for cle, valeur in os.environ.items()
-           if not cle.startswith(("EMAIL_", "SMTP_"))}
+           if not cle.startswith(("EMAIL_", "SMTP_", "WEBHOOKS"))}
     env.update({
         "PYTHONUTF8": "1",
         "PYTHONIOENCODING": "utf-8",
@@ -86,7 +106,11 @@ def environnement(config: dict, mot_de_passe: str, dossier: Path) -> dict[str, s
         "EMAIL_PASSWORD": mot_de_passe,
         "SMTP_HOST": config.get("smtp_host") or "smtp.gmail.com",
         "SMTP_SECURITY": config.get("smtp_security") or "ssl",
+        "ALERT_MAIL": "1" if config.get("alerte_mail", True) else "0",
     })
+    cibles = canaux_alerte(config, jetons)
+    if cibles:
+        env["WEBHOOKS"] = json.dumps(cibles, ensure_ascii=False)
     if config.get("smtp_port"):
         env["SMTP_PORT"] = str(config["smtp_port"])
     if config.get("window_hours"):
@@ -161,7 +185,8 @@ def _decoder(brut: bytes) -> str:
 
 def executer(config: dict, mot_de_passe: str, journal: logging.Logger, *,
              mode: str = "run", dossier: Path | None = None,
-             preflight: bool = True) -> Resultat:
+             preflight: bool = True,
+             jetons: dict[str, str] | None = None) -> Resultat:
     """Une exécution complète : verrou, pré-vol, moteur, journal.
 
     `preflight=False` sert aux diagnostics — « tester les sources » doit pouvoir tourner
@@ -178,7 +203,7 @@ def executer(config: dict, mot_de_passe: str, journal: logging.Logger, *,
             journal.warning("Reseau injoignable : execution reportee, la journee reste ouverte.")
             return Resultat("reseau")
 
-        env = environnement(config, mot_de_passe, dossier)
+        env = environnement(config, mot_de_passe, dossier, jetons)
         debut = time.monotonic()
         processus = subprocess.Popen(
             commande_moteur(mode), cwd=str(dossier), env=env,

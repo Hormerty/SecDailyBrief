@@ -584,6 +584,47 @@ class Application:
         ttk.Label(cadre, text=self._texte("planif.alertes.aide"), foreground="#555").grid(
             row=5, column=0, columnspan=2, sticky="w")
 
+        # Canaux de l'alerte. Un webhook est un secret : il est rangé avec le mot de passe
+        # SMTP, chiffré par DPAPI, et non dans config.json.
+        canaux = ttk.Frame(page)
+        canaux.pack(fill="x", padx=14, pady=(10, 0))
+        canaux.columnconfigure(1, weight=1)
+
+        self.var_mail = tk.BooleanVar(value=bool(self.brouillon.get("alerte_mail", True)))
+        self.var_slack = tk.StringVar(value=self.jetons.get("slack_webhook", ""))
+        self.var_discord = tk.StringVar(value=self.jetons.get("discord_webhook", ""))
+        self.var_telegram_token = tk.StringVar(value=self.jetons.get("telegram_token", ""))
+        self.var_telegram_chat = tk.StringVar(value=self.jetons.get("telegram_chat", ""))
+        self.var_slack_on = tk.BooleanVar(value=bool(self.brouillon.get("alerte_slack", False)))
+        self.var_discord_on = tk.BooleanVar(
+            value=bool(self.brouillon.get("alerte_discord", False)))
+        self.var_telegram_on = tk.BooleanVar(
+            value=bool(self.brouillon.get("alerte_telegram", False)))
+
+        ttk.Label(canaux, text=self._texte("alertes.canaux"),
+                  font=self._titre(11)).grid(row=0, column=0, columnspan=2, sticky="w")
+        ttk.Checkbutton(canaux, text=self._texte("alertes.mail"),
+                        variable=self.var_mail).grid(row=1, column=0, columnspan=2, sticky="w")
+        ttk.Checkbutton(canaux, text=self._texte("alertes.slack"),
+                        variable=self.var_slack_on).grid(row=2, column=0, sticky="w", pady=(6, 0))
+        ttk.Entry(canaux, textvariable=self.var_slack, width=52).grid(
+            row=2, column=1, sticky="we", pady=(6, 0))
+        ttk.Checkbutton(canaux, text=self._texte("alertes.discord"),
+                        variable=self.var_discord_on).grid(row=3, column=0, sticky="w")
+        ttk.Entry(canaux, textvariable=self.var_discord, width=52).grid(
+            row=3, column=1, sticky="we")
+        ttk.Checkbutton(canaux, text=self._texte("alertes.telegram"),
+                        variable=self.var_telegram_on).grid(row=4, column=0, sticky="w")
+        telegram = ttk.Frame(canaux)
+        telegram.grid(row=4, column=1, sticky="we")
+        telegram.columnconfigure(0, weight=1)
+        ttk.Entry(telegram, textvariable=self.var_telegram_token, width=34).grid(
+            row=0, column=0, sticky="we")
+        ttk.Entry(telegram, textvariable=self.var_telegram_chat, width=16).grid(
+            row=0, column=1, sticky="w", padx=(6, 0))
+        ttk.Label(canaux, text=self._texte("alertes.aide"), foreground="#555").grid(
+            row=5, column=0, columnspan=2, sticky="w", pady=(6, 0))
+
         barre = ttk.Frame(page)
         barre.pack(side="bottom", fill="x", pady=(16, 0))
         ttk.Button(barre, text=self._texte("wizard.precedent"),
@@ -594,6 +635,10 @@ class Application:
     def _terminer(self) -> None:
         self.brouillon["heure"] = self.var_heure.get().strip()
         self.brouillon["alertes_immediates"] = bool(self.var_alertes.get())
+        self.brouillon["alerte_mail"] = bool(self.var_mail.get())
+        self.brouillon["alerte_slack"] = bool(self.var_slack_on.get())
+        self.brouillon["alerte_discord"] = bool(self.var_discord_on.get())
+        self.brouillon["alerte_telegram"] = bool(self.var_telegram_on.get())
         self.brouillon["window_hours"] = self.var_fenetre.get().strip()
         self.brouillon["timezone"] = self.var_fuseau.get().strip()
         # Arriver au bout de l'assistant vaut consentement : il a été demandé en chemin.
@@ -609,12 +654,21 @@ class Application:
             return
 
         configuration.enregistrer(self.dossier, self.brouillon)
-        secrets.enregistrer_jetons(paths.chemin_secret(),
-                                   {"smtp_password": self.mot_de_passe})
+        # Un webhook *est* un secret : l'URL suffit à publier. Il part donc dans le même
+        # fichier chiffré que le mot de passe SMTP, jamais dans config.json.
+        jetons = dict(self.jetons)
+        jetons.update({
+            "smtp_password": self.mot_de_passe,
+            "slack_webhook": self.var_slack.get().strip(),
+            "discord_webhook": self.var_discord.get().strip(),
+            "telegram_token": self.var_telegram_token.get().strip(),
+            "telegram_chat": self.var_telegram_chat.get().strip(),
+        })
+        secrets.enregistrer_jetons(paths.chemin_secret(), jetons)
         # Le diagnostic lit l'état en mémoire : sans cette mise à jour, il continue
         # d'annoncer « aucun mot de passe » alors qu'il vient d'être écrit. Un diagnostic
         # doit dire ce qui est, pas ce qui était au démarrage.
-        self.jetons = {"smtp_password": self.mot_de_passe}
+        self.jetons = jetons
         configuration.enregistrer_perimetre(self.dossier, self.perimetre)
         self._programmer()
         self.reglages = dict(self.brouillon)
