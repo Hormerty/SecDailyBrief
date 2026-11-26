@@ -37,9 +37,12 @@ def test_marqueur_portable_deplace_les_donnees(monkeypatch, tmp_path):
 
 
 def test_defaut_dans_appdata(monkeypatch, tmp_path):
+    """Le dossier par défaut suit le système : profil Windows, ou XDG sous Linux."""
     monkeypatch.delenv(paths.VARIABLE_DONNEES, raising=False)
     monkeypatch.setenv("APPDATA", str(tmp_path))
+    monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path))
     monkeypatch.setattr(paths, "est_portable", lambda: False)
+
     assert paths.dossier_donnees() == tmp_path / paths.NOM_APPLICATION
 
 

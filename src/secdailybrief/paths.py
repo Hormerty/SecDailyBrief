@@ -15,6 +15,8 @@ import os
 import sys
 from pathlib import Path
 
+from . import plateforme
+
 NOM_APPLICATION = "SecDailyBrief"
 VARIABLE_DONNEES = "SECDailyBrief_DATA"
 MARQUEUR_PORTABLE = "portable.flag"
@@ -43,12 +45,16 @@ def est_portable() -> bool:
 
 
 def dossier_donnees() -> Path:
-    """Dossier de travail : imposé par l'environnement, portable, ou %APPDATA%."""
+    """Dossier de travail : imposé par l'environnement, portable, ou celui du système."""
     impose = os.environ.get(VARIABLE_DONNEES)
     if impose:
         return Path(impose).expanduser()
     if est_portable():
         return dossier_executable() / "data"
+    # Linux et macOS : XDG. Windows : le profil itinérant, comme historiquement.
+    systeme = plateforme.dossier_donnees()
+    if systeme is not None:
+        return systeme
     appdata = os.environ.get("APPDATA")
     base = Path(appdata) if appdata else Path.home() / "AppData" / "Roaming"
     return base / NOM_APPLICATION
