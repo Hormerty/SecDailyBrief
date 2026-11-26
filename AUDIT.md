@@ -40,7 +40,19 @@ what keeps the two repositories honest with each other.
 
 ## Findings
 
-### 1. The Linux binary has never been run — high
+### 1. The Linux binary has never been run — resolved on 26 November
+
+**Update, same day:** WSL 2 was installed, Ubuntu 26.04 initialised, and the application built
+and executed there. `build/build.sh` produced an 18 MB archive containing `cacert.pem` and
+`engine.json`; the frozen binary reported ten checks, the platform layer wrote to
+`~/.local/share/SecDailyBrief`, both systemd timers installed, listed and removed, the window
+opened through WSLg, and the portable variant wrote its journal beside the executable.
+
+Three defects surfaced, all invisible to the test suite: the diagnostic named a "profil Windows"
+under Linux, `prochaine_execution()` called PowerShell with Windows creation flags, and
+`build.sh` arrived with CRLF endings because `.gitattributes` did not cover `*.sh`.
+
+The finding stands as written below, because it is what the measurements showed that morning.
 
 The abstraction, the systemd units and `build.sh` are written and their tests pass on
 `ubuntu-latest`, but no binary has ever been produced for Linux, and nothing has run under

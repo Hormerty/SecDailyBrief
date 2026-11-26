@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.7.0 — 26 November 2026
+
+### Added
+
+- **Linux**, built and tested on a real Ubuntu 26.04 inside WSL — not merely compiled in CI.
+  The platform layer holds one implementation per system: DPAPI or the desktop keyring for
+  secrets, a named mutex or `flock` for the single-instance lock, `%APPDATA%` or XDG for the
+  data folder, `schtasks` or systemd timers for the schedule.
+- The scheduler converts the same task XML into systemd units, so the two platforms share one
+  description. The conversion knows that the daily task's `Repetition` of `PT15M` is Windows'
+  catch-up window, not a quarter-hourly cadence: only a `TimeTrigger` becomes a periodic timer.
+- `build/build.sh`, mirroring `build.ps1` with the same guards — including the refusal to
+  produce an archive without `cacert.pem`.
+- The release workflow now builds on both systems and publishes four archives with a single
+  `SHA256SUMS`.
+
+### Fixed
+
+- The diagnostic announced "profil Windows" as the data folder whatever the system.
+- `prochaine_execution()` called PowerShell with Windows creation flags on Linux, raising
+  `ValueError` the first time a timer was actually installed.
+- `.gitattributes` protected `.py`, `.md` and `.txt` from the CRLF conversion but not `.sh`:
+  `build.sh` arrived with Windows line endings and bash refused `set -euo pipefail`.
+
+All three were found by running the application on Linux, and were invisible to 135 passing
+tests.
+
 ## 1.6.0 — 26 November 2026
 
 ### Added
