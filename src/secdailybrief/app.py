@@ -914,7 +914,10 @@ class Application:
     def _lancer(self, mode: str, preflight: bool = True) -> None:
         if getattr(self, "_en_cours", False):
             return                      # un second clic ne lance pas un second rapport
-        if not self.mot_de_passe:
+        # Le mot de passe ne sert qu'à envoyer. « Tester les sources » et « Vérifier les
+        # liens » n'envoient rien : exiger un secret pour eux fermait deux boutons sans
+        # raison, et affichait un message de courriel en échec.
+        if runner.exige_mot_de_passe(mode) and not self.mot_de_passe:
             self._afficher_statut(self._texte("courriel.test.echec"))
             return
 

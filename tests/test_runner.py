@@ -229,3 +229,64 @@ def test_l_environnement_porte_les_webhooks_et_le_choix_du_courriel(tmp_path):
     assert "hooks.slack.com" in env["WEBHOOKS"]
     # Aucun secret ne doit fuir dans une variable héritée du shell.
     assert "EMAIL_PASSWORD" in env and env["EMAIL_PASSWORD"] == "motdepasse"
+
+# --- Boutons « Sources » et « Liens » du panneau -------------------------------------------
+
+def test_les_verifications_du_moteur_ont_un_mode():
+    """Sans entrée dans MODES, les boutons ne lançaient rien."""
+    assert runner.MODES["sources"] == ["--check-feeds"]
+    assert runner.MODES["liens"] == ["--check-links"]
+
+
+def test_seuls_les_modes_qui_envoient_exigent_le_mot_de_passe():
+    """Tester les sources n'envoie aucun courriel : le mot de passe n'a rien à y faire."""
+    assert runner.exige_mot_de_passe("run")
+    assert runner.exige_mot_de_passe("alerte")
+    assert not runner.exige_mot_de_passe("sources")
+    assert not runner.exige_mot_de_passe("liens")
+    assert not runner.exige_mot_de_passe("preview")
+
+
+def test_l_application_accepte_les_drapeaux_du_moteur(monkeypatch):
+    """L'exécutable figé rejetait « --check-feeds » : unrecognized arguments."""
+    from secdailybrief import __main__ as point_entree
+
+    appels = []
+    monkeypatch.setattr(point_entree, "executer_moteur", lambda mode: appels.append(mode) or 0)
+
+    assert point_entree.main(["--moteur", "--check-feeds"]) == 0
+    assert point_entree.main(["--moteur", "--check-links"]) == 0
+    assert point_entree.main(["--moteur", "--alerte"]) == 0
+    assert appels == ["sources", "liens", "alerte"]
+
+
+def test_executer_moteur_appelle_les_bonnes_fonctions(monkeypatch):
+    from secdailybrief import __main__ as point_entree
+
+    appels = []
+
+    class Module:
+        def check_feeds(self):
+            appels.append("feeds")
+            return 0
+
+        def check_links(self):
+            appels.append("liens")
+            return 0
+
+        def main(self):
+            appels.append("rapport")
+            return 0
+
+        def main_alert(self):
+            appels.append("alerte")
+            return 0
+
+    monkeypatch.setattr(point_entree.engine, "module", lambda: Module())
+    monkeypatch.setattr(point_entree.logging_setup, "journaliser", lambda chemin: None)
+
+    point_entree.executer_moteur("sources")
+    point_entree.executer_moteur("liens")
+    point_entree.executer_moteur("rapport")
+
+    assert appels == ["feeds", "liens", "rapport"]

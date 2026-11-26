@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.7.3 — 26 November 2026
+
+### Fixed
+
+- The panel's **« Sources »** and **« Liens »** buttons did nothing in the released binary. The
+  frozen application passes `--check-feeds` or `--check-links` to itself before handing the work
+  to the engine, but its argument parser did not know those flags and rejected them with
+  *unrecognized arguments*. They are now accepted and dispatched to `check_feeds()` or
+  `check_links()`. Verified on the rebuilt binary: the check starts and queries the feeds.
+- Those two buttons also demanded an SMTP password before running, although neither sends
+  anything — and a missing password showed a mail error. Only `--run` and `--alerte` ask for it
+  now; the rule lives in `runner.exige_mot_de_passe` and is tested.
+- Building the environment no longer raises when no configuration exists yet: the sources check
+  must be usable on a fresh install.
+
 ## 1.7.2 — 26 November 2026
 
 ### Fixed

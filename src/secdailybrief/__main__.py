@@ -28,6 +28,14 @@ def executer_moteur(mode: str = "rapport") -> int:
     journal = logging_setup.journaliser(paths.chemin_journal())
     try:
         module = engine.module()
+        # Le moteur expose ses vérifications dans son bloc `__main__` : `--check-feeds` et
+        # `--check-links` n'y sont traités que là. En appelant ses fonctions directement, c'est
+        # à nous de faire le tri — sinon les boutons « Sources » et « Liens » du panneau
+        # tombaient sur « unrecognized arguments ».
+        if mode == "sources":
+            return module.check_feeds()
+        if mode == "liens":
+            return module.check_links()
         if mode == "alerte":
             return module.main_alert()
         return module.main()
@@ -103,9 +111,17 @@ def _main(argv: list[str] | None = None) -> int:
     parseur.add_argument("--preview", action="store_true", help="ecrire un apercu sans envoyer")
     parseur.add_argument("--moteur", action="store_true", help=argparse.SUPPRESS)
     parseur.add_argument("--doctor", action="store_true", help="diagnostic complet")
+    # Les deux vérifications du moteur, atteignables depuis le panneau. Sans ces arguments,
+    # l'exécutable figé les rejetait : « unrecognized arguments ».
+    parseur.add_argument("--check-feeds", action="store_true", help=argparse.SUPPRESS)
+    parseur.add_argument("--check-links", action="store_true", help=argparse.SUPPRESS)
     arguments = parseur.parse_args(argv)
 
     if arguments.moteur:
+        if arguments.check_feeds:
+            return executer_moteur("sources")
+        if arguments.check_links:
+            return executer_moteur("liens")
         return executer_moteur("alerte" if arguments.alerte else "rapport")
     if arguments.doctor:
         from . import doctor

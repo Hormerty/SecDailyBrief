@@ -131,6 +131,15 @@ MODES = {
     "liens": ["--check-links"],
 }
 
+#: Modes qui envoient quelque chose. Eux seuls ont besoin du mot de passe : l'exiger pour
+#: « tester les sources » fermait deux boutons qui n'envoient rien, avec un message de
+#: courriel en échec.
+MODES_ENVOI = frozenset({"run", "alerte"})
+
+
+def exige_mot_de_passe(mode: str) -> bool:
+    return mode in MODES_ENVOI
+
 
 def commande_moteur(mode: str = "run") -> list[str]:
     """Comment lancer le moteur, selon qu'on est en développement ou dans l'exécutable figé."""
