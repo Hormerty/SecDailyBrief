@@ -1,3 +1,3 @@
 """SecDailyBrief — application de bureau autour du moteur de veille."""
 
-__version__ = "1.5.0"
+__version__ = "1.5.1"

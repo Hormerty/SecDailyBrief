@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.5.1 — 26 November 2026
+
+### Changed
+
+- The alert run no longer reads all 124 feeds. Measured over a real pass, it cost **43,5 MB**
+  and about four minutes every three hours, two thirds of it for three hosts (elastic.co
+  8,26 MB, MSRC 3,13, a FeedBurner aggregator 2,79) and a hundred blogs.
+- It now reads the national CERT feeds, the three technical bodies without a country, and the
+  services that feed its scoring — **10,94 MB** measured.
+- Restricting it to CERTs was not enough: of the eleven report lines naming the author's stack,
+  none came from a CERT; they came from Cisco PSIRT and Microsoft MSRC. The alert therefore
+  also keeps the **vendor advisory feeds whose name matches a product in the stack** — PSIRTs,
+  never blogs. Two feeds for this stack, 3,3 MB, so **14,2 MB** per run: two thirds less than
+  before, with the keywords still covered.
+
 ## 1.5.0 — 26 November 2026
 
 ### Added
