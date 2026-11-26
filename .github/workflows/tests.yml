@@ -1,7 +1,8 @@
 name: tests
 
 # Le depot est public : une modification qui casse les tests doit se voir avant la fusion,
-# pas apres la publication.
+# pas apres la publication. La matrice couvre Windows et Linux : le jour ou l'application
+# sera portee, la CI doit deja savoir ce qui casse, et ou.
 
 on:
   push:
@@ -14,7 +15,11 @@ permissions:
 
 jobs:
   pytest:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -22,6 +27,14 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+
+      # tkinter n'est pas dans l'image Ubuntu : sans ce paquet, les tests d'interface
+      # echouent a l'import. xvfb fournit l'affichage que X reclame.
+      - name: Dependances systeme (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk xvfb
 
       - name: Installer les dependances
         run: |
@@ -32,7 +45,14 @@ jobs:
       - name: Verifier l'empreinte du moteur
         run: python tools/fetch_engine.py --verify
 
-      - name: Tests
+      - name: Tests (Windows)
+        if: runner.os != 'Linux'
         env:
           PYTHONUTF8: "1"
         run: python -m pytest -q
+
+      - name: Tests (Linux, avec affichage)
+        if: runner.os == 'Linux'
+        env:
+          PYTHONUTF8: "1"
+        run: xvfb-run -a python -m pytest -q
