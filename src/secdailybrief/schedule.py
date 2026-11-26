@@ -12,6 +12,7 @@ deux raisons qu'aucune option de ligne de commande ne couvre :
 from __future__ import annotations
 
 import subprocess
+import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -136,8 +137,19 @@ def _schtasks(*arguments: str) -> subprocess.CompletedProcess:
                           creationflags=DRAPEAUX, check=False)
 
 
+def _linux():
+    from . import planificateur_linux
+    return planificateur_linux
+
+
 def installer(xml: str, nom: str = NOM_TACHE) -> None:
-    """Crée ou remplace la tâche. Le XML part en UTF-16, comme l'attend schtasks."""
+    """Crée ou remplace la tâche : schtasks sous Windows, unités systemd ailleurs.
+
+    Le XML reste la description commune ; le planificateur Linux le convertit plutôt que de
+    maintenir deux définitions qui divergeraient.
+    """
+    if sys.platform != "win32":
+        return _linux().installer(xml, nom)
     with tempfile.NamedTemporaryFile("w", suffix=".xml", encoding="utf-16",
                                      delete=False) as fichier:
         fichier.write(DECLARATION + xml)
@@ -151,10 +163,14 @@ def installer(xml: str, nom: str = NOM_TACHE) -> None:
 
 
 def supprimer(nom: str = NOM_TACHE) -> None:
+    if sys.platform != "win32":
+        return _linux().supprimer(nom)
     _schtasks("/Delete", "/TN", nom, "/F")
 
 
 def existe(nom: str = NOM_TACHE) -> bool:
+    if sys.platform != "win32":
+        return _linux().existe(nom)
     return _schtasks("/Query", "/TN", nom).returncode == 0
 
 

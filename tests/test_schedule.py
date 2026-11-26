@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from xml.etree import ElementTree
 
-from secdailybrief import schedule
+from secdailybrief import planificateur_linux, schedule
 
 NS = {"t": schedule.NS}
 
@@ -86,3 +86,40 @@ def test_la_tache_d_alerte_porte_un_nom_distinct():
     assert schedule.NOM_TACHE_ALERTE == "SecDailyBrief-Alerte"
     assert schedule.NOM_TACHE_ALERTE != schedule.NOM_TACHE
     assert schedule.HEURES_ALERTE == 3
+
+
+# --- Planificateur Linux : unités systemd --------------------------------------------------
+
+def test_la_tache_quotidienne_devient_un_timer_quotidien():
+    """Le XML quotidien porte aussi une Repetition (PT15M) : c'est la reprise Windows, pas
+    la cadence. systemd doit voir un rendez-vous à 06:00, pas une relance toutes les 15 min."""
+    xml = schedule.construire_xml(PurePosixPath("/opt/SecDailyBrief/SecDailyBrief"),
+                                  heure="06:00", arguments="--run")
+
+    service, timer = planificateur_linux.unites(xml, "SecDailyBrief")
+
+    assert "OnCalendar=*-*-* 06:00:00" in timer
+    assert "Persistent=true" in timer
+    assert "PT15M" not in timer
+    assert 'ExecStart="/opt/SecDailyBrief/SecDailyBrief" --run' in service
+
+
+def test_la_tache_d_alerte_devient_une_relance_de_trois_heures():
+    xml = schedule.construire_xml_alerte(PurePosixPath("/opt/SecDailyBrief/SecDailyBrief"),
+                                         arguments="--alerte")
+
+    service, timer = planificateur_linux.unites(xml, "SecDailyBrief-Alerte")
+
+    assert "OnUnitActiveSec=3h" in timer
+    assert "OnBootSec=5min" in timer
+    assert "--alerte" in service
+
+
+def test_les_unites_s_inspectent_sans_systemd():
+    """La génération est pure : elle doit être vérifiable depuis Windows comme depuis Linux."""
+    xml = schedule.construire_xml(PurePosixPath("/opt/SecDailyBrief/SecDailyBrief"), heure="07:30")
+
+    _, timer = planificateur_linux.unites(xml, "Tache")
+
+    assert "OnCalendar=*-*-* 07:30:00" in timer
+    assert "[Install]" in timer and "WantedBy=timers.target" in timer
