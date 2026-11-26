@@ -1,65 +1,38 @@
 # SecDailyBrief
 
+[![tests](https://github.com/Hormerty/SecDailyBrief/actions/workflows/tests.yml/badge.svg)](https://github.com/Hormerty/SecDailyBrief/actions/workflows/tests.yml)
+[![release](https://img.shields.io/github/v/release/Hormerty/SecDailyBrief)](https://github.com/Hormerty/SecDailyBrief/releases/latest)
+[![license](https://img.shields.io/github/license/Hormerty/SecDailyBrief)](LICENSE)
+[![platforms](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-informational)](#installation)
+[![languages](https://img.shields.io/badge/interface-9%20languages-informational)](#what-it-does)
+
 A daily security brief by e-mail, built for your own stack.
 
-This Windows application drives the watch engine of the
-[`Sec_Daily_report-`](https://github.com/Hormerty/Sec_Daily_report-) repository **without
-modifying it**: the engine is fetched at a pinned commit, its checksum is verified, and the
-configuration is injected from the outside.
-
-> **Version 1.7.3** — in two archives:
-> `SecDailyBrief-1.7.3-win64.zip` (data in the Windows profile) and
-> `SecDailyBrief-1.7.3-win64-portable.zip` (data beside the executable).
-> The interface speaks French, English, Dutch, German, Spanish, Italian, Portuguese, Hindi and Chinese.
-
-## Installation
-
-1. Download an archive from the [published releases](../../releases/latest).
-2. Extract it wherever you like, then run `SecDailyBrief.exe`.
-3. The wizard asks for your language, your sending address and an app password — not your
-   usual password. For Gmail: <https://myaccount.google.com/apppasswords>.
-4. The **Test sending** button checks the configuration before saving it, then **Finish**
-   creates the daily scheduled task.
-
-The executable is not code-signed: Windows will show "Windows protected your PC" on first
-launch. This is accepted, and documented in the `README.txt` inside the archive.
-
-No Python installation is required: the executable embeds its own interpreter. The archive
-has been installed and run end to end on a clean Windows, without Python and without any
-development tooling.
-
-### Antivirus
-
-The executable is not code-signed — a deliberate choice — and a PyInstaller binary that
-relaunches itself to do its work trips several heuristic rules at once. Some scanners hold or
-block it on first launch; Avast calls this CyberCapture, or a false positive.
-
-Nothing is hidden in the file, and every release publishes the checksums of its archives.
-Three ways out, in order of preference:
-
-1. **Report a false positive** to the vendor. For Avast:
-   <https://www.avast.com/false-positive-file-form.php>. This fixes it for every user, not
-   only for you.
-2. **Add an exclusion** for the folder holding `SecDailyBrief.exe`. The scheduled task runs
-   that same file, so one exclusion covers both the manual runs and the daily one.
-3. **Check the checksum** before allowing it. Every release carries a `SHA256SUMS` file
-   produced by the build itself:
-
-   ```powershell
-   Get-FileHash .\SecDailyBrief-1.7.3-win64.zip -Algorithm SHA256
-   ```
-
-   Compare it with the line in `SHA256SUMS`. Download only from the
-   [official releases page](../../releases) — a copy hosted elsewhere may have been altered.
+![The first-run wizard](docs/wizard.png)
 
 ## What it does
 
-Every morning, an e-mail that gathers the day's security advisories, ranks the most critical
-ones, and keeps only what touches your stack. The engine queries around a hundred public
-sources, deduplicates, and produces both an HTML and a text report.
+- **124 sources**, including **20 national CERTs** — CERT-FR, CERT-EU, NCSC, BSI, CSIRT Italia,
+  INCIBE, CERT.at, NSM, NCSC-FI, NKI, DNSC, SK-CERT and more. Foreign advisory titles are
+  **translated to English** by tables written from real titles, not guessed vocabulary.
+- **Exposure, not just severity**: every CISA KEV entry carries its **remediation deadline**,
+  and the forty highest-scoring CVEs of a run are enriched with the **CISA SSVC decision**
+  (exploitation, automatable, technical impact) before ranking.
+- **Your stack first**: the products you list drive the ranking — a flaw in your firewall
+  outranks a theoretical one elsewhere.
+- **Alerts within three hours**, by e-mail, Slack, Discord or Telegram, on top of the daily
+  report — and each channel is a checkbox.
+- **Nine interface languages**: French, English, Dutch, German, Spanish, Italian, Portuguese,
+  Hindi, Chinese.
+- **Windows and Linux**, both built and tested in CI, and the Linux build verified by hand.
 
-The program does not run continuously: it wakes up, works for one to two minutes, then stops.
-No account, no intermediary server, no telemetry.
+The engine itself lives in [`Sec_Daily_report-`](https://github.com/Hormerty/Sec_Daily_report-)
+and is used here **without modifying it**: fetched at a pinned commit, checksummed, and
+configured from the outside. [`SOURCES.md`](https://github.com/Hormerty/Sec_Daily_report-/blob/main/SOURCES.md)
+lists every source, and every candidate examined and refused with its measurements.
+
+The program does not run continuously: it wakes up, works for one to two minutes, then
+stops. No account, no intermediary server, no telemetry.
 
 ## Principles
 
@@ -68,8 +41,8 @@ No account, no intermediary server, no telemetry.
   application, before `main()` is called.
 - **No monitoring of your machine.** The application reads public feeds and sends an e-mail.
   It reads no document, captures nothing, and transmits nothing to its author.
-- **Your settings stay with you**, in `%APPDATA%\SecDailyBrief`, and are erased from the
-  application itself.
+- **Your settings stay with you**, in `%APPDATA%\SecDailyBrief` on Windows and
+  `~/.local/share/SecDailyBrief` on Linux, and are erased from the application itself.
 
 ## Development
 
