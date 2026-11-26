@@ -3,6 +3,17 @@
 Texts ready to post, and the exact patch for the awesome list. Everything is in English, because
 the audience is.
 
+## Status
+
+| What | Where | Since |
+|---|---|---|
+| awesome-threat-intelligence | [PR #519](https://github.com/hslatman/awesome-threat-intelligence/pull/519) — 2 commits, +8/−0, no conflict | 26 November 2026 |
+| Reddit announcement | not posted yet | — |
+
+The list merges roughly one pull request per quarter and has 154 open: the PR is likely to sit for
+months. The link from its README only exists once merged — until then, the announcement is what
+brings visitors.
+
 ## Reddit — r/cybersecurity (or r/blueteamsec)
 
 **Title**
@@ -23,11 +34,11 @@ against the products I actually run, and sends one e-mail at 06:00.
 
 Three things ended up mattering more than I expected:
 
-- **Foreign CERTs are translated.** CERT-FR, CERT-SL, SI-CERT, SK-CERT and the others publish in
-  their own language. The tables were written from real titles, not guessed vocabulary, so a
+- **Foreign CERTs are translated.** CERT-FR, CERT Polska, SI-CERT, SK-CERT and the others publish
+  in their own language. The tables were written from real titles, not guessed vocabulary, so a
   product name survives the translation.
 - **The CISA KEV entry carries its remediation deadline.** "Known exploited" tells you to panic;
-  "due 28/11" tells you when.
+  "due 28 November" tells you when.
 - **CISA's SSVC decision ranks the list**, not my gut feeling: exploitation, automatable,
   technical impact. Forty CVEs per run, cached.
 
