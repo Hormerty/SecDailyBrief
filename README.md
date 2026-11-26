@@ -10,6 +10,16 @@ A daily security brief by e-mail, built for your own stack.
 
 ![The control panel](docs/panel.png)
 
+## Contents
+
+- [What it does](#what-it-does)
+- [Why not an RSS reader?](#why-not-an-rss-reader)
+- [Installation](#installation)
+- [Principles](#principles)
+- [Development](#development) — [packaging](#packaging), [versioning](#versioning),
+  [continuous integration](#continuous-integration), [encoding](#encoding)
+- [Licence](#licence)
+
 ## What it does
 
 - **124 sources**, including **20 national CERTs** — CERT-FR, CERT-EU, NCSC, BSI, CSIRT Italia,
