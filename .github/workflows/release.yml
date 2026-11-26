@@ -1,9 +1,12 @@
 name: release
 
 # Publier une version ne doit dependre ni d'un poste, ni d'un venv, ni d'un chemin D:\.
-# Un tag pousse suffit : le binaire est reconstruit sur un runner Windows, verifie, puis
+# Un tag pousse suffit : chaque binaire est reconstruit sur son systeme, verifie, puis
 # attache a la version. Le tag doit correspondre a la version du paquet — un binaire
 # annoncant 1.1.0 dans une version 1.2.0 serait indetectable pour qui telecharge.
+#
+# PyInstaller ne compile pas en croise : le binaire Linux ne peut naitre que d'un runner
+# Linux, et le binaire Windows que d'un runner Windows. Deux constructions, une publication.
 
 on:
   push:
@@ -13,7 +16,7 @@ permissions:
   contents: write
 
 jobs:
-  publier:
+  windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,16 +35,6 @@ jobs:
       - name: Verifier l'empreinte du moteur
         run: python tools/fetch_engine.py --verify
 
-      - name: Le tag correspond-il a la version du paquet
-        shell: pwsh
-        run: |
-          $version = (Select-String -Path "src\secdailybrief\__init__.py" -Pattern '__version__ = "([^"]+)"').Matches[0].Groups[1].Value
-          $tag = $env:GITHUB_REF_NAME -replace '^v', ''
-          if ($tag -ne $version) {
-            throw "Le tag $tag ne correspond pas a la version $version du paquet."
-          }
-          Write-Host "Version $version confirmee par le tag $env:GITHUB_REF_NAME."
-
       - name: Construire les deux archives
         shell: pwsh
         env:
@@ -49,36 +42,92 @@ jobs:
           SDB_SORTIE: ${{ runner.temp }}\sortie
         run: |
           powershell -NoProfile -ExecutionPolicy Bypass -File build\build.ps1
-          Get-ChildItem "$env:SDB_SORTIE\dist\*.zip" | ForEach-Object { "  $($_.Name) : $($_.Length) octets" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: archives-windows
+          path: ${{ runner.temp }}/sortie/dist/*.zip
+          if-no-files-found: error
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Dependances systeme
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk
+
+      - name: Installer les dependances
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-dev.txt pyinstaller
+          python -m pip install -e .
+
+      - name: Verifier l'empreinte du moteur
+        run: python tools/fetch_engine.py --verify
+
+      - name: Construire les deux archives
+        env:
+          PYTHON: python
+        run: bash build/build.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: archives-linux
+          path: build/dist/*.tar.gz
+          if-no-files-found: error
+
+  publier:
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Le tag correspond-il a la version du paquet
+        shell: bash
+        run: |
+          version=$(grep -Po '__version__ = "\K[^"]+' src/secdailybrief/__init__.py)
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$tag" != "$version" ]; then
+            echo "Le tag $tag ne correspond pas a la version $version du paquet." >&2
+            exit 1
+          fi
+          echo "Version $version confirmee par le tag $GITHUB_REF_NAME."
 
       - name: Empreintes des archives
-        shell: pwsh
-        env:
-          SDB_SORTIE: ${{ runner.temp }}\sortie
+        shell: bash
         run: |
-          # Un seul fichier à vérifier, produit par la CI elle-même : les empreintes recopiées
-          # à la main dans les notes de version finissent toujours par diverger.
-          $dossier = Join-Path $env:SDB_SORTIE "dist"
-          $lignes = Get-ChildItem "$dossier\*.zip" | Sort-Object Name | ForEach-Object {
-            $empreinte = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
-            "$empreinte  $($_.Name)"
-          }
-          $fichier = Join-Path $env:SDB_SORTIE "SHA256SUMS"
-          Set-Content -Path $fichier -Value $lignes -Encoding ascii
-          Get-Content $fichier | ForEach-Object { "  $_" }
+          # Un seul fichier a verifier, produit par la CI elle-meme : les empreintes recopiees
+          # a la main dans les notes de version finissent toujours par diverger.
+          cd dist
+          ls -1 *.zip *.tar.gz | sort | xargs sha256sum > SHA256SUMS
+          cat SHA256SUMS
 
       - name: Publier la version et y deposer les archives
-        shell: pwsh
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $dossier = Join-Path $env:RUNNER_TEMP "sortie\dist"
-          $fichiers = @(Get-ChildItem "$dossier\*.zip")
-          if ($fichiers.Count -ne 2) { throw "Deux archives attendues, $($fichiers.Count) trouvee(s)." }
-          $somme = Join-Path $env:RUNNER_TEMP "sortie\SHA256SUMS"
-          $titre = "SecDailyBrief " + ($env:GITHUB_REF_NAME -replace '^v', '')
-          $arguments = @("release", "create", $env:GITHUB_REF_NAME, "--title", $titre, "--generate-notes")
-          if ($env:GITHUB_REF_NAME -match '-') { $arguments += "--prerelease" }
-          $arguments += $fichiers | ForEach-Object { $_.FullName }
-          $arguments += $somme
-          gh @arguments
+          cd dist
+          count=$(ls -1 *.zip *.tar.gz | wc -l)
+          if [ "$count" -ne 4 ]; then
+            echo "Quatre archives attendues, $count trouvee(s)." >&2
+            exit 1
+          fi
+          titre="SecDailyBrief ${GITHUB_REF_NAME#v}"
+          prerelease=()
+          case "$GITHUB_REF_NAME" in *-*) prerelease=(--prerelease) ;; esac
+          gh release create "$GITHUB_REF_NAME" --title "$titre" --generate-notes "${prerelease[@]}" \
+            ./*.zip ./*.tar.gz ./SHA256SUMS
