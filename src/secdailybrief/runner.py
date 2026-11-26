@@ -101,6 +101,7 @@ def environnement(config: dict, mot_de_passe: str, dossier: Path) -> dict[str, s
 
 MODES = {
     "run": [],
+    "alerte": ["--alerte"],
     "preview": ["--preview"],
     "sources": ["--check-feeds"],
     "liens": ["--check-links"],

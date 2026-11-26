@@ -576,6 +576,14 @@ class Application:
         ttk.Label(cadre, text=self._texte("planif.fuseau.aide"), foreground="#555").grid(
             row=3, column=0, columnspan=2, sticky="w")
 
+        self.var_alertes = tk.BooleanVar(
+            value=bool(self.brouillon.get("alertes_immediates", True)))
+        ttk.Checkbutton(cadre, text=self._texte("planif.alertes"),
+                        variable=self.var_alertes).grid(row=4, column=0, columnspan=2,
+                                                        sticky="w", pady=(10, 0))
+        ttk.Label(cadre, text=self._texte("planif.alertes.aide"), foreground="#555").grid(
+            row=5, column=0, columnspan=2, sticky="w")
+
         barre = ttk.Frame(page)
         barre.pack(side="bottom", fill="x", pady=(16, 0))
         ttk.Button(barre, text=self._texte("wizard.precedent"),
@@ -585,6 +593,7 @@ class Application:
 
     def _terminer(self) -> None:
         self.brouillon["heure"] = self.var_heure.get().strip()
+        self.brouillon["alertes_immediates"] = bool(self.var_alertes.get())
         self.brouillon["window_hours"] = self.var_fenetre.get().strip()
         self.brouillon["timezone"] = self.var_fuseau.get().strip()
         # Arriver au bout de l'assistant vaut consentement : il a été demandé en chemin.
@@ -612,7 +621,7 @@ class Application:
         self.afficher_panneau()
 
     def _programmer(self) -> None:
-        """Enregistre la tâche quotidienne ; un échec ne doit pas empêcher d'utiliser l'app."""
+        """Enregistre les tâches ; un échec ne doit pas empêcher d'utiliser l'application."""
         try:
             # L'application, pas le moteur : `--run` passe par le pré-vol, le verrou, le
             # journal et le dossier de données. `--moteur` sauterait tout cela.
@@ -621,6 +630,18 @@ class Application:
                                           arguments=" ".join(commande[1:]))
             schedule.installer(xml)
         except Exception:                       # noqa: BLE001 - pas de tâche, pas de drame
+            pass
+        # La tâche d'alerte suit la case à cocher : installée quand elle est cochée, retirée
+        # sinon. C'est ce qui la distingue du rapport quotidien, qui reste la tâche principale.
+        try:
+            if self.brouillon.get("alertes_immediates"):
+                commande = runner.commande_application("alerte")
+                xml = schedule.construire_xml_alerte(Path(commande[0]),
+                                                    arguments=" ".join(commande[1:]))
+                schedule.installer(xml, nom=schedule.NOM_TACHE_ALERTE)
+            elif schedule.existe(schedule.NOM_TACHE_ALERTE):
+                schedule.supprimer(schedule.NOM_TACHE_ALERTE)
+        except Exception:                       # noqa: BLE001
             pass
 
     # --- panneau -----------------------------------------------------------

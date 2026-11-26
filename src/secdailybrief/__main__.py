@@ -14,8 +14,12 @@ from . import config as configuration
 from . import engine, logging_setup, paths, runner, secrets
 
 
-def executer_moteur() -> int:
+def executer_moteur(mode: str = "rapport") -> int:
     """Exécute le moteur dans le processus courant (chemin de l'exécutable figé).
+
+    Le moteur aiguille lui-même entre le rapport et l'alerte dans son bloc `__main__`, que
+    l'exécutable figé ne traverse pas : c'est donc à nous de choisir la fonction. L'oublier
+    faisait envoyer un rapport complet à chaque passage d'alerte — constaté le 26 novembre.
 
     Toute exception est journalisée et transformée en code de sortie : sans ça, une erreur
     du moteur fait apparaître la boîte « Unhandled exception in script » de PyInstaller, qui
@@ -23,7 +27,10 @@ def executer_moteur() -> int:
     """
     journal = logging_setup.journaliser(paths.chemin_journal())
     try:
-        return engine.module().main()
+        module = engine.module()
+        if mode == "alerte":
+            return module.main_alert()
+        return module.main()
     except Exception as exc:      # noqa: BLE001 - on rapporte, on ne laisse pas mourir
         journal.exception("Echec du moteur : %s", exc)
         return 1
@@ -91,17 +98,20 @@ def main(argv: list[str] | None = None) -> int:
 def _main(argv: list[str] | None = None) -> int:
     parseur = argparse.ArgumentParser(prog="SecDailyBrief", add_help=True)
     parseur.add_argument("--run", action="store_true", help="executer la veille et envoyer")
+    parseur.add_argument("--alerte", action="store_true", help="alerte immediate si faille majeure")
     parseur.add_argument("--preview", action="store_true", help="ecrire un apercu sans envoyer")
     parseur.add_argument("--moteur", action="store_true", help=argparse.SUPPRESS)
     parseur.add_argument("--doctor", action="store_true", help="diagnostic complet")
     arguments = parseur.parse_args(argv)
 
     if arguments.moteur:
-        return executer_moteur()
+        return executer_moteur("alerte" if arguments.alerte else "rapport")
     if arguments.doctor:
         from . import doctor
 
         return doctor.executer()
+    if arguments.alerte:
+        return _executer("alerte")
     if arguments.preview:
         return _executer("preview")
     if arguments.run:

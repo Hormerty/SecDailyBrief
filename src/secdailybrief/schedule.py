@@ -17,6 +17,8 @@ from datetime import datetime
 from pathlib import Path
 
 NOM_TACHE = "SecDailyBrief"
+NOM_TACHE_ALERTE = "SecDailyBrief-Alerte"
+HEURES_ALERTE = 3   # même cadence que le workflow `alerte.yml` du dépôt du moteur
 XML_VERSION = "1.2"
 NS = "http://schemas.microsoft.com/windows/2004/02/mit/task"
 DECLARATION = '<?xml version="1.0" encoding="UTF-16"?>\n'
@@ -53,6 +55,56 @@ def construire_xml(executable: Path, heure: str = "06:00", arguments: str = "--r
         <StopAtDurationEnd>true</StopAtDurationEnd>
       </Repetition>
     </CalendarTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>true</RunOnlyIfNetworkAvailable>
+    <ExecutionTimeLimit>PT20M</ExecutionTimeLimit>
+    <Enabled>true</Enabled>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>"{executable}"</Command>
+      <Arguments>{arguments}</Arguments>
+    </Exec>
+  </Actions>
+</Task>
+"""
+
+
+def construire_xml_alerte(executable: Path, heures: int = HEURES_ALERTE,
+                          arguments: str = "--alerte",
+                          debut: datetime | None = None) -> str:
+    """Corps XML de la tâche d'alerte immédiate, relancée toutes les `heures`.
+
+    Distincte de la tâche quotidienne : celle-ci porte un rapport à 06:00 avec une fenêtre de
+    reprise, celle-là tourne en boucle et n'écrit que si une faille dépasse le seuil d'alerte.
+    `MultipleInstancesPolicy` à IgnoreNew évite qu'un passage lent se superpose au suivant.
+    """
+    debut = debut or datetime.now().replace(minute=17, second=0, microsecond=0)
+    return f"""<Task version="{XML_VERSION}" xmlns="{NS}">
+  <RegistrationInfo>
+    <Description>SecDailyBrief - alerte immediate toutes les {heures} heures</Description>
+  </RegistrationInfo>
+  <Triggers>
+    <TimeTrigger>
+      <StartBoundary>{debut:%Y-%m-%dT%H:%M:%S}</StartBoundary>
+      <Enabled>true</Enabled>
+      <Repetition>
+        <Interval>PT{heures}H</Interval>
+        <Duration>P1D</Duration>
+        <StopAtDurationEnd>true</StopAtDurationEnd>
+      </Repetition>
+    </TimeTrigger>
   </Triggers>
   <Principals>
     <Principal id="Author">

@@ -6,6 +6,7 @@ import sys
 
 import pytest
 
+from secdailybrief import config as configuration
 from secdailybrief import lock, logging_setup, runner
 
 # Le verrou est un mutex Windows nommé : si l'application tourne pendant les tests — ce qui
@@ -153,3 +154,44 @@ def test_le_decodeur_accepte_utf8_et_cp1252():
     assert runner._decoder(texte.encode("utf-8")) == texte
     assert runner._decoder(texte.encode("cp1252")) == texte
     assert runner._decoder(b"ascii seulement") == "ascii seulement"
+
+
+def test_le_mode_alerte_passe_le_drapeau_au_moteur():
+    """La tâche d'alerte doit lancer le moteur dans son mode, pas le mode rapport."""
+    assert runner.MODES["alerte"] == ["--alerte"]
+    assert runner.MODES["run"] == []
+
+
+def test_la_commande_d_alerte_passe_par_l_application():
+    """Comme pour --run : pré-vol, verrou, journal et dossier de données restent en place."""
+    commande = runner.commande_application("alerte")
+
+    assert commande[-1] == "--alerte"
+
+
+def test_le_mode_alerte_est_active_par_defaut(monkeypatch, tmp_path):
+    assert configuration.DEFAUTS["alertes_immediates"] is True
+    assert configuration.charger(tmp_path)["alertes_immediates"] is True
+
+def test_le_mode_alerte_appelle_bien_la_fonction_d_alerte_du_moteur(monkeypatch):
+    """Le 26 novembre, --alerte appelait main() et envoyait un rapport complet."""
+    from secdailybrief import __main__ as point_entree
+
+    appels = []
+
+    class ModuleFactice:
+        def main(self):
+            appels.append("rapport")
+            return 0
+
+        def main_alert(self):
+            appels.append("alerte")
+            return 0
+
+    monkeypatch.setattr(point_entree.engine, "module", lambda: ModuleFactice())
+    monkeypatch.setattr(point_entree.logging_setup, "journaliser", lambda chemin: None)
+
+    assert point_entree.executer_moteur("alerte") == 0
+    assert appels == ["alerte"]
+    assert point_entree.executer_moteur("rapport") == 0
+    assert appels == ["alerte", "rapport"]

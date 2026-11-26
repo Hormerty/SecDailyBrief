@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.5.0 — 26 November 2026
+
+### Added
+
+- **Immediate alerts, every three hours.** The engine has carried this mode since the bot's
+  first version — a higher threshold, an eight-hour window, five items per mail, its own state
+  file and a first-run seed that avoids a burst of messages. When the watching moved into this
+  application, only the daily report was carried over: the alert workflow was left behind, and
+  a critical flaw waited for the next morning. A second scheduled task,
+  `SecDailyBrief-Alerte`, now runs the mode every three hours, and the wizard gained a checkbox
+  to turn it on or off.
+
+  The cost is real and deliberate: a full collection lasts about five minutes, so eight runs a
+  day. In exchange, a flaw above the alert threshold reaches the mailbox within three hours.
+
+- The diagnostic now says whether the alert task exists, so a user cannot believe they receive
+  alerts that were never scheduled.
+
+### Fixed
+
+- `--alerte` called the engine's daily-report function. The engine chooses between the two in
+  its own `__main__` block, which the frozen executable never enters, so the choice has to be
+  made by the application — and it was not. The consequence was not cosmetic: testing the mode
+  on a fresh data directory **sent a real daily report to the author's mailbox** on 26 November.
+  The application now calls `main_alert()` explicitly, and a regression test asserts which
+  function each mode reaches.
+
 ## 1.4.4 — 26 November 2026
 
 ### Added

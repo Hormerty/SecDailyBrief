@@ -65,3 +65,24 @@ def test_pas_de_demarrage_sur_batterie_bloque():
     racine = ElementTree.fromstring(_xml())
     assert racine.findtext(
         "t:Settings/t:DisallowStartIfOnBatteries", namespaces=NS) == "false"
+
+
+# --- Alerte immédiate : seconde tâche, toutes les trois heures ------------------------------
+
+def test_la_tache_d_alerte_se_relance_toutes_les_trois_heures():
+    xml = schedule.construire_xml_alerte(Path(r"C:\Program Files\SecDailyBrief\SecDailyBrief.exe"),
+                                         debut=datetime(2026, 11, 26, 9, 17))
+
+    assert "<TimeTrigger>" in xml
+    assert "<Interval>PT3H</Interval>" in xml
+    assert "<Duration>P1D</Duration>" in xml
+    assert "<Arguments>--alerte</Arguments>" in xml
+    # Une seule instance à la fois : un passage lent ne doit pas se superposer au suivant.
+    assert "<MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>" in xml
+    assert "2026-11-26T09:17:00" in xml
+
+
+def test_la_tache_d_alerte_porte_un_nom_distinct():
+    assert schedule.NOM_TACHE_ALERTE == "SecDailyBrief-Alerte"
+    assert schedule.NOM_TACHE_ALERTE != schedule.NOM_TACHE
+    assert schedule.HEURES_ALERTE == 3

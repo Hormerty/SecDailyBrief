@@ -135,16 +135,25 @@ def verifier_smtp(reglages: dict, mot_de_passe: str, tester=None) -> Verificatio
     return Verification("SMTP", OK, "connexion et authentification acceptees")
 
 
-def verifier_planificateur(existe=None, prochaine=None) -> Verification:
+def verifier_planificateur(existe=None, prochaine=None, existe_alerte=None) -> Verification:
     existe = existe or schedule.existe
     prochaine = prochaine or schedule.prochaine_execution
+    existe_alerte = existe_alerte or (
+        lambda: schedule.existe(schedule.NOM_TACHE_ALERTE))
     try:
         if not existe():
             return Verification("Planificateur", AVERTISSEMENT, "aucune tache enregistree")
         moment = prochaine()
+        # La tache d'alerte est optionnelle : son absence n'est pas un defaut, mais son etat
+        # merite d'etre dit, sinon un utilisateur croit recevoir des alertes qui n'existent pas.
+        try:
+            alerte = "alertes actives" if existe_alerte() else "alertes inactives"
+        except Exception:         # noqa: BLE001
+            alerte = "etat des alertes inconnu"
     except Exception as exc:      # noqa: BLE001 - planificateur indisponible
         return Verification("Planificateur", AVERTISSEMENT, f"{type(exc).__name__}: {exc}")
-    return Verification("Planificateur", OK, f"prochaine execution : {moment or 'inconnue'}")
+    return Verification("Planificateur", OK,
+                        f"prochaine execution : {moment or 'inconnue'} · {alerte}")
 
 
 def collecter(dossier: Path | None = None, *, reglages: dict | None = None,
