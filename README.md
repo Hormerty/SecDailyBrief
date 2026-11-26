@@ -30,6 +30,10 @@
   (exploitation, automatable, technical impact) before ranking.
 - **Your stack first**: the products you list drive the ranking — a flaw in your firewall
   outranks a theoretical one elsewhere.
+- **Cross-checked, not merely aggregated.** When three independent sources report the same CVE,
+  the brief says so (`3 sources`) and raises its rank; a CVE carried by one feed alone is not
+  presented as if three outlets had confirmed it. A source that stops answering is counted and
+  named in the report rather than silently dropped.
 - **Alerts within three hours**, by e-mail, Slack, Discord or Telegram, on top of the daily
   report — and each channel is a checkbox.
 - **Nine interface languages**: French, English, Dutch, German, Spanish, Italian, Portuguese,
