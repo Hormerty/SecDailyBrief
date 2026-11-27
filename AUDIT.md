@@ -27,7 +27,7 @@ before every build and every run, and never writes to it.
 | # | Finding | Severity | Status |
 |---|---|---|---|
 | 1 | The Linux binary had never been run | high | resolved 26 Nov |
-| 2 | A plain-text PAT and backup codes in a pCloud-synced folder | high | **partly resolved 27 Nov** |
+| 2 | A plain-text PAT and backup codes in a pCloud-synced folder | high | **resolved 27 Nov** |
 | 3 | No dependency monitoring | medium | **fixed 27 Nov** |
 | 4 | No code scanning in either repository | medium | **fixed 27 Nov** |
 | 5 | Scheduling failures swallowed in silence | medium | **fixed 27 Nov** |
@@ -77,9 +77,13 @@ What was done on 27 November:
   C:\Users\itsan\AppData\Roaming\clefs-sensibles\, whose ACL now grants the owner alone;
 - the revoked token file was left in place for its owner to clean, since the token inside is dead.
 
-What remains, and only the owner can do it: **the recovery codes must be regenerated.** Moving a
-file out of a synced folder does not remove it from pCloud's trash or version history — the codes
-which were uploaded are compromised by definition.
+Then the codes were regenerated, stored in **Proton Pass**, and both local copies deleted: the
+files in clefs-sensibles were only a staging area. The token is the last plain-text secret on
+disk, deliberately, because it is what pushes to GitHub; its ACL names the owner alone and it sits
+outside any synced folder.
+
+Moving a file out of a synced folder does not remove it from pCloud's trash or version history, so
+the regeneration was the fix, not the move — and the old GitHub token is dead, not merely deleted.
 
 ### 5. Scheduling failures swallowed, fixed
 
