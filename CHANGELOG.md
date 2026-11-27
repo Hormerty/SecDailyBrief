@@ -40,7 +40,18 @@ happened since the last tag.
 
 ### Changed
 
-- The engine is re-pinned to `19eee7d`, which adds the link-scheme filter described above to the
+- **The report gives the important five the room the unimportant ones were taking.** Measured on a
+  real run: 126.5 KB of HTML before, 100.3 KB after, and the five priorities now fill 5 % of the
+  message instead of 2 %.
+  - the legend and the twenty-eight-country list became one footer link to `SOURCES.md`;
+  - an item already listed under *Top priorities* is marked `↑ listed above` in its section
+    instead of being detailed twice;
+  - the IBM footprint keeps every country and its count, plus three examples, instead of 45 titles
+    that all came from the sections above;
+  - a description is printed only for a red item, and only when it says something the title does
+    not; Red Hat repeated its title word for word;
+  - commercial items (Black Friday, −78 %, robot vacuums) are filtered like any other off-topic.
+- The engine is re-pinned to `1983983`, which carries the report changes above and the
   silent-source and compression fixes (`e4932ae`). It also stops measuring a feed's silence on
   what we keep: CERT-EU, Microsoft Security, Dark Reading, SANS ISC and Unit 42 were reported
   silent for 33 days while all five had published within 48 hours — their items are filtered out,
