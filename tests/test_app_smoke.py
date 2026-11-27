@@ -402,3 +402,22 @@ def test_revenir_des_canaux_ne_perd_pas_les_webhooks(application):
     assert application.var_discord_on.get() is True
     assert application.var_telegram_token.get() == "123456:jeton"
     assert application.var_telegram_chat.get() == "-100999"
+
+# --- Fenêtre « À propos » ----------------------------------------------------------------
+
+def test_about_affiche_la_version_du_paquet(application):
+    """La fenêtre annonçait « 1.0.0 » en dur, six versions durant, pendant que le panneau et
+    le badge des versions disaient autre chose."""
+    import secdailybrief
+
+    lignes = application._lignes_about()
+
+    assert lignes[0] == f"SecDailyBrief {secdailybrief.__version__}"
+    assert "1.0.0" not in "\n".join(lignes)
+
+
+def test_about_suit_une_version_differente(application, monkeypatch):
+    """La vérification porte sur le paquet, pas sur la valeur du jour."""
+    monkeypatch.setattr(app, "version_actuelle", "9.9.9")
+
+    assert application._lignes_about()[0] == "SecDailyBrief 9.9.9"

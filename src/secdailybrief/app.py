@@ -1117,10 +1117,13 @@ class Application:
         """Ouvre la page de soutien dans le navigateur — rien n'est transmis par l'app."""
         webbrowser.open(URL_SOUTIEN)
 
-    def _ouvrir_about(self) -> None:
-        fenetre = tk.Toplevel(self.racine)
-        fenetre.title(self._texte("about.titre"))
-        fenetre.resizable(False, False)
+    def _lignes_about(self) -> list[str]:
+        """Le contenu de la fenêtre « À propos ».
+
+        La version vient du paquet, jamais d'une chaîne écrite à la main : celle-ci est restée
+        bloquée sur « 1.0.0 » pendant six versions, et la fenêtre annonçait donc autre chose
+        que le numéro affiché par le panneau et par le badge des versions.
+        """
         verrou = {}
         try:
             import json
@@ -1129,12 +1132,18 @@ class Application:
                                 .read_text(encoding="utf-8"))
         except Exception:                       # noqa: BLE001 - pas de verrou : pas bloquant
             verrou = {}
-        lignes = [f"SecDailyBrief 1.0.0",
-                  f"{self._texte('about.moteur')}: {verrou.get('commit', '?')}",
-                  f"{self._texte('about.licence')}: MIT",
-                  f"{self._texte('about.depot')}: {URL_DEPOT}",
-                  "",
-                  self._texte("app.pied")]
+        return [f"SecDailyBrief {version_actuelle}",
+                f"{self._texte('about.moteur')}: {verrou.get('commit', '?')}",
+                f"{self._texte('about.licence')}: MIT",
+                f"{self._texte('about.depot')}: {URL_DEPOT}",
+                "",
+                self._texte("app.pied")]
+
+    def _ouvrir_about(self) -> None:
+        fenetre = tk.Toplevel(self.racine)
+        fenetre.title(self._texte("about.titre"))
+        fenetre.resizable(False, False)
+        lignes = self._lignes_about()
         ttk.Label(fenetre, text="\n".join(lignes), padding=16, justify="left").pack()
         ttk.Button(fenetre, text=self._texte("commun.annuler"),
                    command=fenetre.destroy).pack(pady=(0, 12))
