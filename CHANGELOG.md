@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.7.4 — 27 November 2026
+
+### Fixed
+
+- **The Linux archive would not start on Debian 13.** The frozen binary asked for `GLIBC_2.42`,
+  which Debian 13 (2.41) does not provide: `ImportError: libc.so.6: version GLIBC_2.42 not found`,
+  raised by the bundled `libtcl8.6.so`. The glibc a binary requires is the one of the machine that
+  builds it, and the release job ran on `ubuntu-latest`, which has moved to 26.04 (glibc 2.42).
+  The Linux job now builds on **ubuntu-22.04** (glibc 2.35), so the archive runs on Debian 12 and
+  13, Ubuntu 22.04 and later, and any distribution with glibc ≥ 2.35.
+- The build script now **measures** the glibc the binary requires and refuses to ship when it
+  exceeds the ceiling set by `SDB_GLIBC_MAX` (2.35 in CI). A runner upgrade can no longer
+  reintroduce this in silence — it breaks the build instead of the user's first launch.
+
+Reported by CoreInfini7y in [#5](https://github.com/Hormerty/SecDailyBrief/issues/5), with the
+exact traceback and operating system.
+
 ## 1.7.3 — 26 November 2026
 
 ### Fixed
