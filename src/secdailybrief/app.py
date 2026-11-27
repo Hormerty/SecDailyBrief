@@ -1235,13 +1235,16 @@ class Application:
             verrou = json.loads((engine.dossier() / "engine.json").read_text(encoding="utf-8"))
         except Exception:                       # noqa: BLE001 - pas de verrou : pas bloquant
             verrou = {}
-        commit = verrou.get("commit") or self._texte("about.inconnu")
-        return [f"SecDailyBrief {version_actuelle}",
-                f"{self._texte('about.moteur')}: {commit}",
-                f"{self._texte('about.licence')}: MIT",
-                f"{self._texte('about.depot')}: {URL_DEPOT}",
-                "",
-                self._texte("app.pied")]
+        # Une ligne qui annonce « inconnu » est un défaut déguisé : sans verrou lisible, la
+        # ligne disparaît plutôt que d'avouer son ignorance.
+        lignes = [f"SecDailyBrief {version_actuelle}"]
+        if verrou.get("commit"):
+            lignes.append(f"{self._texte('about.moteur')}: {verrou['commit']}")
+        lignes += [f"{self._texte('about.licence')}: MIT",
+                   f"{self._texte('about.depot')}: {URL_DEPOT}",
+                   "",
+                   self._texte("app.pied")]
+        return lignes
 
     def _ouvrir_about(self) -> None:
         fenetre = tk.Toplevel(self.racine)

@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.7.6 — 27 November 2026
+
+This release exists because 1.7.5 does not say everything it should. Three defects shared one
+cause: the interface knew a fact and looked for it in the wrong place.
+
+### Fixed
+
+- **"Check for updates" now hands you the checksum.** The dialog said a version was available and
+  offered to open the releases page, leaving the reader to find `SHA256SUMS` alone — the step
+  everyone skips. The GitHub API publishes a digest per asset, so the dialog now shows the SHA256
+  of the archive built for this machine (Windows or Linux, portable or not), in a **selectable
+  field**, because a message box cannot be copied from. When no digest is published, it points at
+  `SHA256SUMS` instead of showing an empty box.
+- **The About window read `Engine: ?` in every released binary.** It looked for
+  `vendor/engine.json` next to the executable, while PyInstaller stores it under `_internal/`.
+  `engine.dossier()` knows the difference — the diagnostic used it, the window did not. The line
+  now carries the pinned commit, and **disappears entirely** when the lock is unreadable: a line
+  that announces "unknown" is a defect wearing a translation.
+- **The About window pointed at the engine's repository.** `Repository` now opens this one.
+- The French sentence in the update dialog no longer carries an em dash.
+
 ## 1.7.5 — 27 November 2026
 
 ### Added

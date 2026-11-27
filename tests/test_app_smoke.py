@@ -517,11 +517,13 @@ def test_about_lit_le_commit_du_moteur_epingle(application):
     assert "?" not in lignes[1]
 
 
-def test_about_dit_inconnu_plutot_qu_un_point_d_interrogation(application, monkeypatch,
-                                                             tmp_path):
+def test_about_efface_la_ligne_engine_si_le_verrou_manque(application, monkeypatch,
+                                                      tmp_path):
+    """Une ligne qui annonce « inconnu » est un defaut deguise : elle disparait."""
     monkeypatch.setattr(app.engine, "dossier", lambda: tmp_path)
 
     lignes = application._lignes_about()
 
-    assert application._texte("about.inconnu") in lignes[1]
-    assert "?" not in lignes[1]
+    assert lignes[0].startswith("SecDailyBrief ")
+    assert not any(application._texte("about.moteur") in ligne for ligne in lignes)
+    assert "?" not in "".join(lignes)
