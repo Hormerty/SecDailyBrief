@@ -355,11 +355,23 @@ class Application:
         barre = ttk.Frame(page)
         barre.pack(side="bottom", fill="x", pady=(16, 0))
         ttk.Button(barre, text=self._texte("wizard.precedent"),
-                   command=self.page_consentement).pack(side="left")
+                   command=self._precedent_courriel).pack(side="left")
         ttk.Button(barre, text=self._texte("courriel.tester"),
                    command=self._tester_envoi).pack(side="left", padx=8)
         ttk.Button(barre, text=self._texte("wizard.suivant"),
                    command=self._courriel_suivant).pack(side="right")
+
+    def _precedent_courriel(self) -> None:
+        """« Précédent » ramène au panneau quand on vient de « Réglages ».
+
+        Ouvert par le panneau, l'assistant démarrait sur la page courriel et « Précédent »
+        remontait vers le consentement puis la langue : impossible de revenir au panneau, et
+        les canaux d'alerte, situés en fin de parcours, devenaient inatteignables.
+        """
+        if self.reglages.get("email_user"):
+            self.afficher_panneau()
+        else:
+            self.page_consentement()
 
     def _courriel_suivant(self) -> None:
         """« Suivant » enregistre ce qui est saisi avant de changer de page.
@@ -628,17 +640,33 @@ class Application:
         barre = ttk.Frame(page)
         barre.pack(side="bottom", fill="x", pady=(16, 0))
         ttk.Button(barre, text=self._texte("wizard.precedent"),
-                   command=self.page_stack).pack(side="left")
+                   command=self._precedent_planification).pack(side="left")
         ttk.Button(barre, text=self._texte("wizard.terminer"),
                    command=self._terminer).pack(side="right")
 
-    def _terminer(self) -> None:
-        self.brouillon["heure"] = self.var_heure.get().strip()
-        self.brouillon["alertes_immediates"] = bool(self.var_alertes.get())
+    def _collecter_canaux(self) -> None:
+        """Mémorise les canaux saisis, sans rien écrire sur disque.
+
+        Sans cela, revenir en arrière puis avancer à nouveau vidait les adresses de webhook :
+        la page les relisait depuis le fichier de secrets, qui n'avait pas encore été écrit.
+        """
         self.brouillon["alerte_mail"] = bool(self.var_mail.get())
         self.brouillon["alerte_slack"] = bool(self.var_slack_on.get())
         self.brouillon["alerte_discord"] = bool(self.var_discord_on.get())
         self.brouillon["alerte_telegram"] = bool(self.var_telegram_on.get())
+        self.jetons["slack_webhook"] = self.var_slack.get().strip()
+        self.jetons["discord_webhook"] = self.var_discord.get().strip()
+        self.jetons["telegram_token"] = self.var_telegram_token.get().strip()
+        self.jetons["telegram_chat"] = self.var_telegram_chat.get().strip()
+
+    def _precedent_planification(self) -> None:
+        self._collecter_canaux()
+        self.page_stack()
+
+    def _terminer(self) -> None:
+        self.brouillon["heure"] = self.var_heure.get().strip()
+        self.brouillon["alertes_immediates"] = bool(self.var_alertes.get())
+        self._collecter_canaux()
         self.brouillon["window_hours"] = self.var_fenetre.get().strip()
         self.brouillon["timezone"] = self.var_fuseau.get().strip()
         # Arriver au bout de l'assistant vaut consentement : il a été demandé en chemin.
@@ -795,6 +823,10 @@ class Application:
         # rien, et l'assistant ne s'affiche plus quand une adresse existe déjà.
         ttk.Button(bas, text=self._texte("panneau.reglages"),
                    command=self.page_courriel).pack(side="left", padx=(8, 0))
+        # Les canaux d'alerte vivaient au bout de l'assistant, sans autre porte une fois la
+        # configuration enregistree : un clic depuis le panneau vaut mieux qu'un parcours.
+        ttk.Button(bas, text=self._texte("panneau.alertes"),
+                   command=self.page_planification).pack(side="left", padx=(8, 0))
         ttk.Button(bas, text=self._texte("panneau.don"),
                    command=self._ouvrir_don).pack(side="left", padx=(8, 0))
 

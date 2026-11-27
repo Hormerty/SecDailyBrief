@@ -17,6 +17,17 @@
 Reported by CoreInfini7y in [#5](https://github.com/Hormerty/SecDailyBrief/issues/5), with the
 exact traceback and operating system.
 
+### Fixed — navigation
+
+- **"Back" no longer leads deeper into the wizard.** Opened from **Settings**, the assistant
+  started on the mail page and its "Back" button went up to the consent page, then to the
+  language page, which has no way out: the panel became unreachable, and the alert channels,
+  which sit at the end of the walkthrough, could not be reached at all.
+- **An "Alerts" button in the panel** opens the channel page directly. Changing a Discord
+  webhook took a full walkthrough before; it now takes one click.
+- **Going back from the channels page keeps what was typed.** The webhook addresses were re-read
+  from the secret file, which had not been written yet, so leaving and returning emptied them.
+
 ## 1.7.3 — 26 November 2026
 
 ### Fixed

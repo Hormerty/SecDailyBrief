@@ -345,3 +345,60 @@ def test_domaines_contactes_lus_depuis_le_moteur():
     domaines = app.domaines_contactes()
     assert "cert.cyber.gouv.fr" in domaines
     assert all(" " not in domaine for domaine in domaines)
+
+# --- Navigation : on ne reste jamais prisonnier d'un écran ---------------------------------
+
+def test_precedent_depuis_reglages_revient_au_panneau(application, monkeypatch):
+    """Ouvert par « Réglages », « Précédent » remontait vers le consentement puis la langue :
+    impossible de revenir au panneau, et les canaux d'alerte inatteignables."""
+    application.reglages["email_user"] = "bot@example.com"
+    appels = []
+    monkeypatch.setattr(application, "afficher_panneau", lambda: appels.append("panneau"))
+    monkeypatch.setattr(application, "page_consentement", lambda: appels.append("consentement"))
+
+    application._precedent_courriel()
+
+    assert appels == ["panneau"]
+
+
+def test_precedent_au_premier_lancement_remonte_l_assistant(application, monkeypatch):
+    """Sans configuration enregistrée, il n'y a pas de panneau où revenir."""
+    application.reglages.pop("email_user", None)
+    appels = []
+    monkeypatch.setattr(application, "afficher_panneau", lambda: appels.append("panneau"))
+    monkeypatch.setattr(application, "page_consentement", lambda: appels.append("consentement"))
+
+    application._precedent_courriel()
+
+    assert appels == ["consentement"]
+
+
+def test_le_panneau_ouvre_les_canaux_en_un_clic(application):
+    """Les canaux vivaient au bout de l'assistant, sans porte une fois la configuration faite."""
+    application.reglages["email_user"] = "bot@example.com"
+    application.afficher_panneau()
+
+    application.page_planification()                  # ce que fait le bouton « Alertes »
+
+    for nom in ("var_mail", "var_slack_on", "var_discord_on", "var_telegram_on",
+                "var_discord", "var_telegram_token"):
+        assert hasattr(application, nom), nom
+
+
+def test_revenir_des_canaux_ne_perd_pas_les_webhooks(application):
+    """« Précédent » puis « Suivant » vidait l'adresse Discord : elle était relue du fichier
+    de secrets, qui n'avait pas encore été écrit."""
+    application.reglages["email_user"] = "bot@example.com"
+    application.page_planification()
+    application.var_discord.set("https://discord.com/api/webhooks/123/abc")
+    application.var_discord_on.set(True)
+    application.var_telegram_token.set("123456:jeton")
+    application.var_telegram_chat.set("-100999")
+
+    application._precedent_planification()
+    application.page_planification()
+
+    assert application.var_discord.get() == "https://discord.com/api/webhooks/123/abc"
+    assert application.var_discord_on.get() is True
+    assert application.var_telegram_token.get() == "123456:jeton"
+    assert application.var_telegram_chat.get() == "-100999"
