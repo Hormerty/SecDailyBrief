@@ -51,7 +51,14 @@ happened since the last tag.
   - a description is printed only for a red item, and only when it says something the title does
     not; Red Hat repeated its title word for word;
   - commercial items (Black Friday, −78 %, robot vacuums) are filtered like any other off-topic.
-- The engine is re-pinned to `d723f67`. It also reads the silence banner from the run in progress
+- **Two off-topic articles the brief should never have carried.** *« Oui, on peut faire tourner
+  macOS sur une base Linux »* passed because the relevance filter read the summary, where the word
+  "securite" appeared; a CNIL guide passed because `cnil` was itself one of the threat keywords.
+  Relevance is now judged on the title, `cnil` left the keyword list, and a new source option
+  `require_any` admits a CNIL item only when it speaks of a sanction, a fine, a formal notice or a
+  breach. Measured: 95.5 KB of HTML before, 90.2 KB after.
+- The engine is re-pinned to `337b4f2`, which carries the relevance fix. It also reads the silence
+  banner from the run in progress
   rather than from the database: the first run after the measurement change still named four busy
   feeds, because only a completed run could have written the new dates. With this, the banner is
   empty on a day when every feed answers.
