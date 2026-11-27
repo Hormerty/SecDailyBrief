@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+Changes accumulate here between two versions. When one is cut, this section becomes the release
+notes and a new empty one takes its place: nothing gets lost, and nobody has to reconstruct what
+happened since the last tag.
+
+### Fixed
+
+- **The About window spoke English inside the French interface.** Its title and three labels had
+  never been translated, and the title doubles as the panel button — so the bottom bar read
+  `About` next to `Réglages` and `Faire un don`. It now reads `À propos`, `Moteur`, `Licence`,
+  `Dépôt`, and a test fails if one of them goes back to the English string.
+
 ## 1.7.6 — 27 November 2026
 
 This release exists because 1.7.5 does not say everything it should. Three defects shared one

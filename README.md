@@ -132,6 +132,10 @@ Windows properties of the `.exe` file, and `pyproject.toml`.
 
 ### Versioning
 
+Changes accumulate in an ## Unreleased section at the top of CHANGELOG.md. When a version is
+cut, that section becomes the release notes and an empty one takes its place: nothing is lost
+between two tags, and nobody has to reconstruct what happened.
+
 Three numbers, one rule each:
 
 | Bump | When | Command |
