@@ -51,7 +51,11 @@ happened since the last tag.
   - a description is printed only for a red item, and only when it says something the title does
     not; Red Hat repeated its title word for word;
   - commercial items (Black Friday, −78 %, robot vacuums) are filtered like any other off-topic.
-- The engine is re-pinned to `1983983`, which carries the report changes above and the
+- The engine is re-pinned to `d723f67`. It also reads the silence banner from the run in progress
+  rather than from the database: the first run after the measurement change still named four busy
+  feeds, because only a completed run could have written the new dates. With this, the banner is
+  empty on a day when every feed answers.
+- The previous re-pin, `1983983`, carries the report changes above and the
   silent-source and compression fixes (`e4932ae`). It also stops measuring a feed's silence on
   what we keep: CERT-EU, Microsoft Security, Dark Reading, SANS ISC and Unit 42 were reported
   silent for 33 days while all five had published within 48 hours — their items are filtered out,
