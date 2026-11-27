@@ -30,6 +30,14 @@ happened since the last tag.
   `About` next to `Réglages` and `Faire un don`. It now reads `À propos`, `Moteur`, `Licence`,
   `Dépôt`, and a test fails if one of them goes back to the English string.
 
+### Added
+
+- **Dependabot and CodeQL.** Dependabot opens one grouped pull request a week for the Python
+  dependencies and for the actions, so a vulnerable version is reported instead of being waited
+  for. CodeQL reads the code on every push, every pull request and weekly, with
+  `security-and-quality` queries: a dangerous pattern is now caught by a machine rather than by a
+  reader's attention.
+
 ### Changed
 
 - The engine is re-pinned to `19eee7d`, which adds the link-scheme filter described above to the
