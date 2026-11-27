@@ -8,10 +8,23 @@ happened since the last tag.
 
 ### Fixed
 
+- **Hackmageddon failed on every run** with `unreadable feed`, and the report said so in its
+  warning line. The feed is fine: its host closes the connection when the client accepts gzip,
+  and answers normally when it asks for `identity`. The fetcher already retried with a reader
+  agent; it now retries once more without compression. The source reads again.
+- **The silent-source banner cried wolf on blogs.** A PSIRT that stops for two weeks is a
+  problem; Bellingcat, DoublePulsar or watchTowr publishing monthly is not. Blogs now get 45 days
+  before being reported, advisories keep 14. The line that listed six names for the wrong reason
+  now lists only real silence.
 - **The About window spoke English inside the French interface.** Its title and three labels had
   never been translated, and the title doubles as the panel button — so the bottom bar read
   `About` next to `Réglages` and `Faire un don`. It now reads `À propos`, `Moteur`, `Licence`,
   `Dépôt`, and a test fails if one of them goes back to the English string.
+
+### Changed
+
+- The engine is re-pinned to cbe0e7d (239 358 bytes,
+  90af2daac83869fc5de55814ee76c0581b7c7cd7f4cc25f600fdfa4087b213cd).
 
 ## 1.7.6 — 27 November 2026
 
