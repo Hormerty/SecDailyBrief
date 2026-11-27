@@ -668,7 +668,8 @@ class Application:
         aide.grid(row=ligne, column=colonne, sticky="w", padx=(6, 0))
         aide.bind("<Button-1>", lambda _event: webbrowser.open(self._url_aide(ancre)))
         self.aides_canaux[ancre] = aide
-        self._info_bulle(aide, texte)
+        # L'infobulle dit quoi coller ; cette ligne dit qu'on peut cliquer pour la suite.
+        self._info_bulle(aide, f"{texte}\n{self._texte('alertes.aide.clic')}")
 
     def _url_aide(self, ancre: str) -> str:
         """L'adresse de la page d'aide, ancree sur le canal."""

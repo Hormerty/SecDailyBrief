@@ -445,3 +445,17 @@ def test_l_aide_survolee_existe_dans_les_neuf_langues():
         textes = i18n.textes(code)
         for cle in ("alertes.aide.discord", "alertes.aide.slack", "alertes.aide.telegram"):
             assert textes[cle].strip(), f"{code} : {cle} vide"
+
+def test_l_infobulle_indique_qu_on_peut_cliquer(application, monkeypatch):
+    """Le survol dit quoi coller ; il doit aussi dire qu'un clic mène plus loin."""
+    textes = []
+    monkeypatch.setattr(application, "_info_bulle",
+                        lambda widget, texte: textes.append(texte))
+    application.reglages["email_user"] = "bot@example.com"
+
+    application.page_planification()
+
+    assert len(textes) == 3
+    for texte in textes:
+        assert application._texte("alertes.aide.clic") in texte
+        assert "\n" in texte
