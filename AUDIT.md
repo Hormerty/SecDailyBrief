@@ -45,9 +45,21 @@ dependabot.yml opens one grouped pull request a week for pip and for the actions
 repository; the engine already had its own. codeql.yml runs on push, on pull requests and
 weekly, with security-and-quality queries, in both repositories.
 
-Both analyses ran on 27 November and succeeded (runs 46025398124 and 46025229173). The alerts
-themselves could not be listed from here: the fine-grained token has no security-events read
-permission — a limitation of the token, not of the workflow. The Security tab shows them.
+Both analyses ran on 27 November. Once a fine-grained token with **Code scanning alerts: Read**
+was in place, the alerts could be read:
+
+| | Alerts | Errors | Warnings | Notes |
+|---|---|---|---|---|
+| SecDailyBrief | 13 | **0** | 3 | 10 |
+| Sec_Daily_report- | 10 | **0** | 2 | 8 |
+
+Two errors were found and fixed the same day: a secret-tool call with a keyword argument the
+function does not take (a TypeError on every Linux desktop with libsecret, when saving the
+password), and a test fixture's possibly-uninitialised variable.
+
+What remains is note-level, except three warnings which are false positives or test-only:
+py/implicit-string-concatenation-in-list (long strings split across lines inside one list
+element, with their commas), and py/incomplete-url-substring-sanitization in a test.
 
 ### 2. Credentials in a cloud-synced folder, partly resolved
 
