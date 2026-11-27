@@ -23,8 +23,10 @@ happened since the last tag.
 
 ### Changed
 
-- The engine is re-pinned to cbe0e7d (239 358 bytes,
-  90af2daac83869fc5de55814ee76c0581b7c7cd7f4cc25f600fdfa4087b213cd).
+- The engine is re-pinned to e4932ae, which also fixes the silent-source banner: it now measures
+  what a feed publishes rather than what we keep. CERT-EU, Microsoft Security, Dark Reading, SANS
+  ISC and Unit 42 were reported silent for 33 days while all five had published within 48 hours —
+  their items are filtered out, so no row was ever written, so a busy feed looked dead.
 
 ## 1.7.6 — 27 November 2026
 
