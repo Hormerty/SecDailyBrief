@@ -149,7 +149,8 @@ def installer(xml: str, nom: str = NOM_TACHE) -> None:
     maintenir deux définitions qui divergeraient.
     """
     if sys.platform != "win32":
-        return _linux().installer(xml, nom)
+        _linux().installer(xml, nom)
+        return
     with tempfile.NamedTemporaryFile("w", suffix=".xml", encoding="utf-16",
                                      delete=False) as fichier:
         fichier.write(DECLARATION + xml)
@@ -164,7 +165,8 @@ def installer(xml: str, nom: str = NOM_TACHE) -> None:
 
 def supprimer(nom: str = NOM_TACHE) -> None:
     if sys.platform != "win32":
-        return _linux().supprimer(nom)
+        _linux().supprimer(nom)
+        return
     _schtasks("/Delete", "/TN", nom, "/F")
 
 

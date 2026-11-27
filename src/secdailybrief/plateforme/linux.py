@@ -15,7 +15,6 @@ reste lisible des deux côtés, à ceci près que le contenu n'est plus chiffré
 """
 from __future__ import annotations
 
-import base64
 import contextlib
 import fcntl
 import os
