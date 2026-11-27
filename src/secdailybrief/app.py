@@ -1077,24 +1077,62 @@ class Application:
         statut_avant = self.var_statut.get()
         self._afficher_statut("…")
 
-        def suite(publiee) -> None:
+        def suite(release) -> None:
             self._maj_en_cours = False
             self._afficher_statut(statut_avant)
-            if publiee is None:
+            if release is None:
                 messagebox.showerror(self._texte("commun.erreur"), self._texte("maj.echec"))
                 return
+            publiee = release.get("tag")
             if updates.plus_recente(version_actuelle, publiee):
-                question = self._texte("maj.dispo").format(version=publiee,
-                                                           actuelle=version_actuelle)
-                if messagebox.askyesno(self._texte("commun.information"), question):
-                    webbrowser.open(updates.PAGE)
+                self._afficher_maj(publiee, release.get("empreintes") or {})
                 return
             messagebox.showinfo(self._texte("commun.information"),
                                 self._texte("maj.ok").format(version=version_actuelle))
 
         # Hors du fil UI : l'appel a un délai de cinq secondes, et une fenêtre figée
         # pendant cinq secondes ressemble à un plantage.
-        self._en_arriere_plan(updates.derniere_publiee, suite)
+        self._en_arriere_plan(updates.derniere_release, suite)
+
+    def _afficher_maj(self, publiee: str, empreintes: dict) -> None:
+        """La version disponible, et l'empreinte de l'archive qui correspond à cette machine.
+
+        Une boîte de dialogue ordinaire ne laisse pas copier son texte : l'empreinte est donc
+        dans un champ, sélectionnable, sinon elle ne sert à rien.
+        """
+        version = publiee.lstrip("vV")
+        archive = updates.nom_archive(version, portable=paths.est_portable())
+        empreinte = empreintes.get(archive, "")
+
+        fenetre = tk.Toplevel(self.racine)
+        fenetre.title(self._texte("commun.information"))
+        fenetre.resizable(False, False)
+        cadre = ttk.Frame(fenetre, padding=16)
+        cadre.pack(fill="both", expand=True)
+
+        ttk.Label(cadre, justify="left", wraplength=460,
+                  text=self._texte("maj.dispo").format(version=publiee,
+                                                       actuelle=version_actuelle)).pack(anchor="w")
+        if empreinte:
+            ttk.Label(cadre, justify="left", wraplength=460, text=self._texte(
+                "maj.empreinte").format(archive=archive)).pack(anchor="w", pady=(12, 2))
+            champ = ttk.Entry(cadre, width=68)
+            champ.insert(0, empreinte)
+            champ.configure(state="readonly")
+            champ.pack(anchor="w")
+            champ.focus_set()
+            champ.selection_range(0, "end")
+        else:
+            ttk.Label(cadre, justify="left", wraplength=460,
+                      text=self._texte("maj.empreinte.absente")).pack(anchor="w", pady=(12, 0))
+
+        boutons = ttk.Frame(cadre)
+        boutons.pack(fill="x", pady=(16, 0))
+        ttk.Button(boutons, text=self._texte("maj.ouvrir"),
+                   command=lambda: (webbrowser.open(updates.PAGE), fenetre.destroy())
+                   ).pack(side="left")
+        ttk.Button(boutons, text=self._texte("commun.annuler"),
+                   command=fenetre.destroy).pack(side="right")
 
     def _libelle_statut(self, statut: str) -> str:
         """Les statuts du lanceur, dits dans la langue de l'interface."""

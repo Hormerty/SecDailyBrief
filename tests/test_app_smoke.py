@@ -298,10 +298,11 @@ def test_le_bouton_de_mise_a_jour_annonce_une_version_plus_recente(application, 
     """La requête part hors du fil UI, puis le résultat revient par le fil principal."""
     import time as _time
 
-    monkeypatch.setattr(app.updates, "derniere_publiee", lambda *a, **k: "v9.9.9")
-    questions = []
-    monkeypatch.setattr(app.messagebox, "askyesno",
-                        lambda titre, texte: questions.append(texte) or False)
+    monkeypatch.setattr(app.updates, "derniere_release",
+                        lambda *a, **k: {"tag": "v9.9.9", "empreintes": {}})
+    vus = []
+    monkeypatch.setattr(application, "_afficher_maj",
+                        lambda publiee, empreintes: vus.append((publiee, empreintes)))
     application.afficher_panneau()
     statut_avant = application.var_statut.get()
 
@@ -312,8 +313,8 @@ def test_le_bouton_de_mise_a_jour_annonce_une_version_plus_recente(application, 
             break
         _time.sleep(0.02)
 
-    assert questions, "aucune question posée sur la nouvelle version"
-    assert "9.9.9" in questions[0]
+    assert vus, "aucune fenêtre annonçant la nouvelle version"
+    assert vus[0][0] == "v9.9.9"
     assert application.var_statut.get() == statut_avant, "la ligne d'état doit être restaurée"
 
 
@@ -459,3 +460,47 @@ def test_l_infobulle_indique_qu_on_peut_cliquer(application, monkeypatch):
     for texte in textes:
         assert application._texte("alertes.aide.clic") in texte
         assert "\n" in texte
+
+def test_la_fenetre_de_mise_a_jour_montre_l_empreinte(application):
+    """Une boîte de dialogue ne laisse pas copier son texte : l'empreinte est dans un champ."""
+    attendu = app.updates.nom_archive("9.9.9", portable=app.paths.est_portable())
+
+    application._afficher_maj("v9.9.9", {attendu: "abc123def456"})
+
+    champs = []
+
+    def parcourir(widget):
+        for enfant in widget.winfo_children():
+            if enfant.winfo_class() in ("TEntry", "Entry"):
+                champs.append(enfant.get())
+            parcourir(enfant)
+
+    parcourir(application.racine)
+    assert "abc123def456" in champs
+
+    # On referme la fenetre ouverte par le test : une fenetre par test, pas une de plus.
+    for enfant in application.racine.winfo_children():
+        if isinstance(enfant, tk.Toplevel):
+            enfant.destroy()
+
+
+def test_la_fenetre_de_mise_a_jour_sans_empreinte_le_dit(application):
+    """Si l'empreinte manque, on renvoie vers SHA256SUMS plutot que d'afficher un champ vide."""
+    application._afficher_maj("v9.9.9", {})
+
+    textes = []
+
+    def parcourir(widget):
+        for enfant in widget.winfo_children():
+            try:
+                textes.append(str(enfant.cget("text")))
+            except tk.TclError:
+                pass
+            parcourir(enfant)
+
+    parcourir(application.racine)
+    assert any("SHA256SUMS" in texte for texte in textes)
+
+    for enfant in application.racine.winfo_children():
+        if isinstance(enfant, tk.Toplevel):
+            enfant.destroy()
