@@ -27,7 +27,7 @@ before every build and every run, and never writes to it.
 | # | Finding | Severity | Status |
 |---|---|---|---|
 | 1 | The Linux binary had never been run | high | resolved 26 Nov |
-| 2 | A plain-text PAT and backup codes on the system drive | high | open, user action |
+| 2 | A plain-text PAT and backup codes, readable by any local account | high | open, user action |
 | 3 | No dependency monitoring | medium | **fixed 27 Nov** |
 | 4 | No code scanning in either repository | medium | **fixed 27 Nov** |
 | 5 | Scheduling failures swallowed in silence | medium | **fixed 27 Nov** |
@@ -48,6 +48,31 @@ weekly, with security-and-quality queries, in both repositories.
 Both analyses ran on 27 November and succeeded (runs 46025398124 and 46025229173). The alerts
 themselves could not be listed from here: the fine-grained token has no security-events read
 permission — a limitation of the token, not of the workflow. The Security tab shows them.
+
+### 2. Two credential files readable by every local account, open
+
+D:\ is a data drive, not the system drive — the first version of this audit said otherwise and
+was wrong. The drive is not the problem; the permissions are. Three files
+(jeton-secdailybrief.txt.txt, stripe_backup_code.txt, mc_backup-codes.txt) carry the
+inherited ACL of the drive root:
+
+| Principal | Rights |
+|---|---|
+| DESKTOP-…\itsan (owner) | Full control |
+| BUILTIN\Administrators | Full control |
+| NT AUTHORITY\SYSTEM | Full control |
+| NT AUTHORITY\Authenticated Users | **Modify** |
+| BUILTIN\Users | **Modify** |
+
+Any account that can log on to this machine can read — and modify — the personal access token and
+the two sets of recovery codes. Whether D: is encrypted could not be checked without elevation,
+and pCloud is installed: if this drive is inside a synced folder, the files also leave the machine.
+
+The fix is one command per file, and it keeps the owner's access:
+
+`
+icacls D:\fichier.txt /inheritance:r /grant:r %USERNAME%:(R,W)
+`
 
 ### 5. Scheduling failures swallowed, fixed
 
