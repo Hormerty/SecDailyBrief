@@ -137,6 +137,9 @@ jobs:
           # `gh release create` seul echouait avec « release already exists ».
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" ./*.zip ./*.tar.gz ./SHA256SUMS --clobber
+            # Supprimer un tag transforme sa version en brouillon : sans cette ligne, elle
+            # restait invisible sur la page des versions apres un tag deplace.
+            gh release edit "$GITHUB_REF_NAME" --draft=false
           else
             gh release create "$GITHUB_REF_NAME" --title "$titre" --generate-notes "${prerelease[@]}" \
               ./*.zip ./*.tar.gz ./SHA256SUMS
