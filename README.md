@@ -22,20 +22,20 @@
 
 ## What it does
 
-- **124 sources**, including **20 national CERTs** — CERT-FR, CERT-EU, NCSC, BSI, CSIRT Italia,
+- **124 sources**, including **20 national CERTs** - CERT-FR, CERT-EU, NCSC, BSI, CSIRT Italia,
   INCIBE, CERT.at, NSM, NCSC-FI, NKI, DNSC, SK-CERT and more. Foreign advisory titles are
   **translated to English** by tables written from real titles, not guessed vocabulary.
 - **Exposure, not just severity**: every CISA KEV entry carries its **remediation deadline**,
   and the forty highest-scoring CVEs of a run are enriched with the **CISA SSVC decision**
   (exploitation, automatable, technical impact) before ranking.
-- **Your stack first**: the products you list drive the ranking — a flaw in your firewall
+- **Your stack first**: the products you list drive the ranking - a flaw in your firewall
   outranks a theoretical one elsewhere.
 - **Cross-checked, not merely aggregated.** When three independent sources report the same CVE,
   the brief says so (`3 sources`) and raises its rank; a CVE carried by one feed alone is not
   presented as if three outlets had confirmed it. A source that stops answering is counted and
   named in the report rather than silently dropped.
 - **Alerts within three hours**, by e-mail, Slack, Discord or Telegram, on top of the daily
-  report — and each channel is a checkbox.
+  report - and each channel is a checkbox.
 - **Nine interface languages**: French, English, Dutch, German, Spanish, Italian, Portuguese,
   Hindi, Chinese.
 - **Windows and Linux**, both built and tested in CI, and the Linux build verified by hand.
@@ -57,24 +57,24 @@ You could follow the same feeds in Inoreader or FreshRSS. Three things would be 
   rewrites the advisory formulas — from tables written on real titles, so a product name survives
   — and translates the dates inside the title too.
 - **"Known exploited" is not a date.** Every CISA KEV entry carries its remediation deadline, and
-  the ranking uses the CISA SSVC decision — exploitation, automatable, technical impact — rather
+  the ranking uses the CISA SSVC decision — exploitation, automatable, technical impact - rather
   than publication order.
 - **A feed does not know your stack.** The products you list decide what rises to the first
   screen, and an advisory touching one of them triggers an alert within three hours instead of
   waiting for the morning.
 
 A reader shows you everything and lets you decide. This program decides what deserves the first
-screen — and says why.
+screen and says why.
 
 ## Installation
 
 1. Download an archive from the [published releases](../../releases/latest) — `win64` or
    `linux-x86_64`, each in a normal and a portable variant.
 2. Extract it wherever you like, then run `SecDailyBrief` (`SecDailyBrief.exe` on Windows).
-3. The wizard asks for your language, your sending address and an app password — not your usual
+3. The wizard asks for your language, your sending address and an app password, not your usual
    password. For Gmail: <https://myaccount.google.com/apppasswords>.
 4. **Test sending** checks the configuration before saving it, then **Finish** creates the
-   scheduled task — the Windows Task Scheduler, or a systemd timer on Linux.
+   scheduled task ; the Windows Task Scheduler, or a systemd timer on Linux.
 
 ![The first-run wizard](docs/wizard.png)
 
@@ -134,7 +134,7 @@ program does not change.
 .venv\Scripts\python.exe tools\bump_version.py patch
 ```
 
-The script writes the version in all four places that carry it — the package, `pyproject.toml`,
+The script writes the version in all four places that carry it ; the package, `pyproject.toml`,
 the Windows properties of the executable, and the title of the archive README. Hand-editing
 those four is how 1.2.0 shipped with a README announcing 1.1.0.
 
@@ -156,11 +156,11 @@ Publishing therefore does not depend on a particular workstation. `SDB_PYTHON` a
 Everything is read and written as explicit UTF-8. Two traps met for real, and how each was
 handled:
 
-- **Windows PowerShell 5.1** — the one Windows still ships — reads and writes ANSI by
+- **Windows PowerShell 5.1** - the one Windows still ships ; reads and writes ANSI by
   default. A `Get-Content` / `Set-Content` round trip on a UTF-8 file corrupts it
   (`é` becomes `Ã©`). A source file is never rewritten through this shell: use an editor, or
   an explicit `-Encoding UTF8`.
-- **The BOM** — Notepad and `Out-File` produce one, and `json` rejects it. The configuration
+- **The BOM** - Notepad and `Out-File` produce one, and `json` rejects it. The configuration
   file is therefore read as `utf-8-sig`, which accepts it as well as its absence.
 
 In the code, every `read_text` / `write_text` carries its encoding, and console output goes
@@ -168,6 +168,6 @@ through `PYTHONIOENCODING=utf-8` whenever it contains anything beyond ASCII.
 
 ## Licence
 
-MIT — see `LICENSE`.
+MIT : see `LICENSE`.
 
 Developed by Hormerty · © 2026
