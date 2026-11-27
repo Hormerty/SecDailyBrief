@@ -30,7 +30,8 @@ URL_MOT_DE_PASSE = "https://myaccount.google.com/apppasswords"
 URL_SOUTIEN = "https://www.buymeacoffee.com/bsky.scl"
 # Page du depot qui explique, canal par canal, quoi coller dans ces champs.
 URL_ALERTES = ("https://github.com/Hormerty/SecDailyBrief/blob/main/docs/ALERTES.md")
-URL_DEPOT = "https://github.com/Hormerty/Sec_Daily_report-"
+# Le depot du programme. Le moteur a le sien, et sa ligne porte deja son commit.
+URL_DEPOT = "https://github.com/Hormerty/SecDailyBrief"
 NBSP = "\u00a0"
 
 # Raccourcis proposés dans la liste des fuseaux. La liste complète fait six cents entrées :
@@ -1227,12 +1228,16 @@ class Application:
         try:
             import json
 
-            verrou = json.loads((paths.dossier_executable() / "vendor" / "engine.json")
-                                .read_text(encoding="utf-8"))
+            # engine.dossier() sait ou PyInstaller a pose les fichiers : dans le binaire
+            # fige, endor/ vit sous _internal/, et non a cote de l'executable. C'est
+            # pourquoi cette fenetre affichait « Engine: ? » alors que le diagnostic, lui,
+            # lisait l'empreinte sans peine.
+            verrou = json.loads((engine.dossier() / "engine.json").read_text(encoding="utf-8"))
         except Exception:                       # noqa: BLE001 - pas de verrou : pas bloquant
             verrou = {}
+        commit = verrou.get("commit") or self._texte("about.inconnu")
         return [f"SecDailyBrief {version_actuelle}",
-                f"{self._texte('about.moteur')}: {verrou.get('commit', '?')}",
+                f"{self._texte('about.moteur')}: {commit}",
                 f"{self._texte('about.licence')}: MIT",
                 f"{self._texte('about.depot')}: {URL_DEPOT}",
                 "",

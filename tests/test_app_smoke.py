@@ -504,3 +504,24 @@ def test_la_fenetre_de_mise_a_jour_sans_empreinte_le_dit(application):
     for enfant in application.racine.winfo_children():
         if isinstance(enfant, tk.Toplevel):
             enfant.destroy()
+
+def test_about_lit_le_commit_du_moteur_epingle(application):
+    """Le binaire figé posait vendor/ sous _internal : la fenêtre affichait « Engine: ? »."""
+    import json
+
+    verrou = json.loads((app.engine.dossier() / "engine.json").read_text(encoding="utf-8"))
+
+    lignes = application._lignes_about()
+
+    assert verrou["commit"] in lignes[1]
+    assert "?" not in lignes[1]
+
+
+def test_about_dit_inconnu_plutot_qu_un_point_d_interrogation(application, monkeypatch,
+                                                             tmp_path):
+    monkeypatch.setattr(app.engine, "dossier", lambda: tmp_path)
+
+    lignes = application._lignes_about()
+
+    assert application._texte("about.inconnu") in lignes[1]
+    assert "?" not in lignes[1]
