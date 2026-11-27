@@ -22,6 +22,9 @@ pied_attendu = "Developed by Hormerty · © 2026"
 @pytest.fixture(scope="module")
 def racine():
     """Une seule racine Tk pour tous les tests : la détruire et la recréer casse Tcl."""
+    # Initialisé avant le try : CodeQL ne sait pas que pytest.skip lève, et signalait la
+    # variable comme peut-être non initialisée à la ligne suivante.
+    fenetre = None
     try:
         fenetre = tk.Tk()
     except tk.TclError as exc:      # runtime allégé, ou pas de session graphique
