@@ -765,7 +765,12 @@ class Application:
         self.afficher_panneau()
 
     def _programmer(self) -> None:
-        """Enregistre les tâches ; un échec ne doit pas empêcher d'utiliser l'application."""
+        """Enregistre les tâches ; un échec ne doit pas empêcher d'utiliser l'application.
+
+        Un échec doit cependant **laisser une trace** : sans elle, l'utilisateur croit sa tâche
+        installée, le panneau affiche « aucune exécution », et rien ne dit pourquoi. C'est le
+        seul endroit où une panne silencieuse coûte la fonction principale du programme.
+        """
         try:
             # L'application, pas le moteur : `--run` passe par le pré-vol, le verrou, le
             # journal et le dossier de données. `--moteur` sauterait tout cela.
@@ -773,8 +778,8 @@ class Application:
             xml = schedule.construire_xml(Path(commande[0]), heure=self.brouillon["heure"],
                                           arguments=" ".join(commande[1:]))
             schedule.installer(xml)
-        except Exception:                       # noqa: BLE001 - pas de tâche, pas de drame
-            pass
+        except Exception as exc:                # noqa: BLE001 - pas de tâche, pas de drame
+            self._signaler_programmation(exc, quotidienne=True)
         # La tâche d'alerte suit la case à cocher : installée quand elle est cochée, retirée
         # sinon. C'est ce qui la distingue du rapport quotidien, qui reste la tâche principale.
         try:
@@ -785,8 +790,18 @@ class Application:
                 schedule.installer(xml, nom=schedule.NOM_TACHE_ALERTE)
             elif schedule.existe(schedule.NOM_TACHE_ALERTE):
                 schedule.supprimer(schedule.NOM_TACHE_ALERTE)
-        except Exception:                       # noqa: BLE001
+        except Exception as exc:                # noqa: BLE001
+            self._signaler_programmation(exc, quotidienne=False)
+
+    def _signaler_programmation(self, exc: Exception, *, quotidienne: bool) -> None:
+        """Journalise l'échec et le dit à l'écran, au lieu de le taire."""
+        try:
+            journal = logging_setup.journaliser(paths.chemin_journal())
+            journal.exception("Programmation de la tache %s : %s",
+                              "quotidienne" if quotidienne else "d'alerte", exc)
+        except Exception:                       # noqa: BLE001 - journaliser ne doit pas lever
             pass
+        self._afficher_statut(self._texte("planif.echec").format(raison=type(exc).__name__))
 
     # --- panneau -----------------------------------------------------------
     def _bandeau(self, parent, hauteur: int = 72) -> tk.Canvas:

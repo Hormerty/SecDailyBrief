@@ -1,137 +1,110 @@
-# Audit — 26 November 2026
+# Audit
 
-Two repositories, two programs: the engine (`veille.py`) and the desktop application that wraps
-it. This audit records what was measured, not what was intended. Every figure below comes from a
-command run on the day.
+Second pass, 27 November 2026. The first was on 26 November and is summarised here with its
+outcome; findings 5 and 6 are closed, one new vulnerability class was found and fixed.
 
 ## What the two repositories contain
 
-| | `Hormerty/SecDailyBrief` | `Hormerty/Sec_Daily_report-` |
+| | `Sec_Daily_report-` | `SecDailyBrief` |
 |---|---|---|
-| Role | desktop application, packaging, releases | the engine alone, used by GitHub Actions |
-| Language | Python 3.12 | Python 3.12 |
-| Size | 21 modules, 4 002 lines | one file, 238 KB |
-| Tests | 135 test functions | 65 functions, 103 cases once parametrised |
-| Branches | `main` = `95f2db3` | `main` = `42272bd` |
-| Latest release | `v1.6.0`, two Windows archives + `SHA256SUMS` | none — the engine ships inside the application |
+| Role | watch engine: 124 feeds, collectors, report, alerts | desktop application: wizard, panel, scheduling |
+| Tests | 110 | 160 |
+| Language | Python | Python, tkinter |
 | Licence | MIT | MIT |
-| Stars | 9 | 7 |
-| Open issues / PRs | 0 / 0 | 0 / 0 |
 
-The engine is pinned inside the application by commit **and** SHA256 (`vendor/engine.json`,
-`42272bd`, 238 208 bytes), and `--verify` refuses a file that does not match. That mechanism is
-what keeps the two repositories honest with each other.
+The application pins the engine by commit and SHA-256 (`vendor/engine.json`), verifies the checksum
+before every build and every run, and never writes to it.
 
 ## State of the code
 
-- **Versions agree** in all three places that carry one: `__init__.py`, `pyproject.toml`,
-  `build/version.txt` (`1.6.0`).
-- **No secret was ever committed.** Searching the full history of both repositories for
-  `github_pat_` and `ghp_` returns zero occurrences.
-- **Runtime artefacts stay out of git.** `seen.json`, `stats.db`, `kev_cache.json`,
-  `ssvc_cache.json`, `alertes_envoyees.json` and `metasploit_cache.json` are ignored; only
-  `config.example.json` is tracked, deliberately.
-- **No dead `TODO`** in the engine: the seven matches were folder names (`26xxx`).
-- **Windows references left in the application** are the intended ones: `schtasks` inside the
-  Windows branch of `schedule.py`, and the `%APPDATA%` fallback in `paths.py`.
-- **21 broad `except Exception`** in the application, each annotated `noqa: BLE001`. Most are
-  justified — a failing doctor check must not stop the others — but three swallow a failure
-  completely (see finding 5).
+- Three releases on 27 November (1.7.4, 1.7.5, 1.7.6), 19 tags in total.
+- CI: `tests.yml` runs on Windows and Linux for every push; `release.yml` builds four archives on
+  two runners, refuses to publish below glibc 2.35, and makes the publication re-runnable.
+- 66 tracked files, 92 commits, three stale local branches left from the Linux port.
 
-## Findings
+## Findings at a glance
 
-### 1. The Linux binary has never been run — resolved on 26 November
+| # | Finding | Severity | Status |
+|---|---|---|---|
+| 1 | The Linux binary had never been run | high | resolved 26 Nov |
+| 2 | A plain-text PAT and backup codes on the system drive | high | open, user action |
+| 3 | No dependency monitoring | medium | open |
+| 4 | No code scanning in either repository | medium | open |
+| 5 | Scheduling failures swallowed in silence | medium | **fixed 27 Nov** |
+| 6 | Doctor announced DPAPI on Linux | medium | **fixed 27 Nov** |
+| 7 | `secret.dpapi` names a Windows mechanism | low | open |
+| 8 | `javascript:` and `data:` links in the daily report | low to medium | **fixed 27 Nov** |
+| 9 | Secrets passed to the child process in its environment | low | open, documented |
+| 10 | `tzdata` is not pinned | low | open |
+| 11 | No `SECURITY.md` | process | open |
+| 12 | Three stale local branches | housekeeping | open |
 
-**Update, same day:** WSL 2 was installed, Ubuntu 26.04 initialised, and the application built
-and executed there. `build/build.sh` produced an 18 MB archive containing `cacert.pem` and
-`engine.json`; the frozen binary reported ten checks, the platform layer wrote to
-`~/.local/share/SecDailyBrief`, both systemd timers installed, listed and removed, the window
-opened through WSLg, and the portable variant wrote its journal beside the executable.
+### 5. Scheduling failures swallowed, fixed
 
-Three defects surfaced, all invisible to the test suite: the diagnostic named a "profil Windows"
-under Linux, `prochaine_execution()` called PowerShell with Windows creation flags, and
-`build.sh` arrived with CRLF endings because `.gitattributes` did not cover `*.sh`.
+`_programmer` wrapped both task installations in `except Exception: pass`. A failure meant the user
+believed the brief was scheduled, the panel displayed "no run yet", and nothing said why. Each
+failure now goes to the journal and to the status line, in the nine interface languages.
 
-The finding stands as written below, because it is what the measurements showed that morning.
+### 6. Doctor announced DPAPI on Linux, fixed
 
-The abstraction, the systemd units and `build.sh` are written and their tests pass on
-`ubuntu-latest`, but no binary has ever been produced for Linux, and nothing has run under
-`systemctl --user`. The build script and the release workflow exist; neither has been exercised.
+The diagnostic reported "chiffré DPAPI" whatever the platform, while Linux stores the secret in the
+desktop keyring or, failing that, a `0600` file. It now says what is actually there.
 
-**Consequence:** publishing a 1.7.0 today would ship an untested Linux archive. That is the
-1.4.3 mistake — an archive without `cacert.pem` — waiting to happen again.
+### 8. Link schemes, fixed
 
-**Recommendation:** install WSL2, run `build/build.sh` there, launch the application, check the
-wizard and `systemctl --user list-timers`. Only then cut the release.
+The alert renderer checked that a link started with `http://` or `https://`; the daily report did
+not, and rendered `href="{escaped}"` for five different lists. Escaping protects against breaking
+out of the attribute, not against the scheme itself: a feed announcing
+`javascript:alert(document.domain)` produced a working link in the report, which the application
+opens in the browser ("Ouvrir le dernier rapport"). The origin is `file://`, so the impact is
+limited — but the content came from outside, and the defence existed ten lines away.
 
-### 2. A plain-text token, and backup codes, on the system drive — high
+`_lien_html()` now guards every site; a test renders an article whose link is `javascript:` and an
+`also_covered` entry with `data:text/html`, and asserts neither appears.
 
-`D:\jeton-secdailybrief.txt.txt` holds a fine-grained token with `Contents: write` and
-`Pull requests: write`. Next to it, `D:\stripe_backup_code.txt` and `D:\bmc-backup-codes.txt`
-hold recovery codes in clear text.
+### 9. Secrets in the child environment
 
-**Recommendation:** revoke the token once the Linux port is published, and move the backup codes
-into a password manager. Nothing here belongs to the repositories, but both are one screenshot
-away from being exposed.
+`runner.environnement()` passes `EMAIL_PASSWORD`, `WEBHOOKS` (which contains Discord and Slack
+URLs and the Telegram token), `NVD_API_KEY`, `RANSOMWARE_API_KEY` and `GITHUB_TOKEN` to the engine
+process through its environment. On Linux, `/proc/<pid>/environ` is readable by the same user
+while the run lasts; on Windows, another process of the same user can read the block.
 
-### 3. No dependency monitoring in the application — medium
+Severity is low because that attacker already has the encrypted secret file *and* the DPAPI or
+keyring material to open it. It matters for crash dumps and process monitors, not for privilege
+escalation. A pipe or a `0600` temporary file would remove the exposure; not done.
 
-The engine repository has a `dependabot.yml`; the application has none, and `tzdata` is declared
-without a version. Dependencies are `requests==2.34.2`, `feedparser==6.0.14`, `tzdata`,
-`pytest==9.1.1`, `pyinstaller==6.22.3`.
+## Security testing performed on 27 November
 
-**Recommendation:** copy the engine's `dependabot.yml`, and pin `tzdata`.
+| What | Method | Result |
+|---|---|---|
+| Dependencies | OSV query for `requests==2.34.2`, `feedparser==6.0.14`, `pyinstaller==6.22.3`, `pytest==9.1.1` | 0 known vulnerabilities |
+| Link injection | crafted feed entry, rendered report | vulnerable, now fixed and tested |
+| Shell injection | review of the 6 `subprocess` sites | all use argument lists, no `shell=True` |
+| HTML injection | review of every feed-derived string | escaped, except the scheme gap above |
+| Secrets in history | scan of 92 commits for tokens and webhook URLs | nothing but a documentation example |
+| Secret storage | DPAPI on Windows, `0600` file or keyring on Linux | confirmed by the diagnostic |
 
-### 4. No code scanning in either repository — medium
+## What this audit does not cover
 
-Neither repository runs CodeQL, and only the engine has a secrets scanner (gitleaks, wired as a
-pre-commit hook and in `verifier.yml`).
-
-**Recommendation:** add CodeQL to both. It costs nothing on public repositories and catches the
-class of defect that unit tests do not.
-
-### 5. Three failures are swallowed without a trace — medium
-
-`app.py::_programmer` wraps task installation in a bare `except Exception: pass`, twice. If
-`scheduled tasks` refuses the task, the user sees nothing; the wizard closes and the application
-looks configured. The doctor partially compensates — it reports whether the task exists — but
-only if the user opens it.
-
-**Recommendation:** journal the exception before swallowing, and show the alert state in the
-panel rather than only in the doctor.
-
-### 6. The Linux secret fallback is weaker, and the doctor does not say so — medium
-
-Under Linux, `secret-tool` is used when present; otherwise the secret is stored base64 with
-`0600` permissions. That is reversible by anyone who can read the file, unlike DPAPI. The
-behaviour is documented in `plateforme/linux.py`, but the diagnostic still announces
-`Certificats TLS` and `Mot de passe` without saying which backend is in use.
-
-**Recommendation:** add a doctor check naming the backend (`DPAPI`, `Secret Service`, `fichier
-0600`).
-
-### 7. Cosmetic naming — low
-
-`paths.chemin_secret()` still returns `secret.dpapi` on every system. The name now describes a
-Windows mechanism only.
+- **No fuzzing**, no black-box network testing, no Windows kernel-level review.
+- **No certification about unknown flaws.** The exposed surface is a network client that parses
+  remote XML and a local GUI; both are small, but "no 0-day" is not a claim anyone can make.
+- The engine's parsers trust `feedparser` for XML: no explicit XXE or entity-expansion review was
+  performed.
 
 ## What is healthy
 
-- **CI runs on both systems** since today, with `xvfb` so the interface tests open a window on
-  Linux. 135 tests pass on Windows and on Linux.
-- **Releases are reproducible**: built on a runner, the tag must equal the package version, and
-  `SHA256SUMS` is computed from the artefacts rather than typed by hand.
-- **The engine cannot drift**: pinned by commit and checksum, verified before every build.
-- **The source inventory is written down** (`SOURCES.md`): 124 feeds, the 20 covered countries,
-  the four gaps, and every aggregator examined and refused with its measurements.
-- **Alerting is redundant by design**: mail, Slack, Discord and Telegram, each optional, with
-  mail as the fallback when no channel is configured.
+- No secret in the repository or its history; webhooks stay in the encrypted file and never reach
+  `config.json`.
+- No `shell=True`, no `eval`, no `pickle`, no `yaml.load`.
+- Every HTML insertion escapes; every SQL statement is parameterised.
+- The engine is pinned by checksum, and a modified `vendor/veille.py` is detected.
+- The update check downloads nothing: it opens the releases page and shows the checksum of the
+  archive built for the machine.
 
 ## Priority order
 
-1. Test the Linux build in WSL, then publish or do not publish.
-2. Revoke the merge token; move the backup codes.
-3. Add `dependabot.yml` to the application; pin `tzdata`.
-4. Journal the swallowed failures in `_programmer`.
-5. Add a doctor line naming the secret backend.
-6. Add CodeQL to both repositories.
+1. Finding 2 (move the token and the backup codes off the system drive) — the only high one.
+2. Findings 3 and 4 (Dependabot, CodeQL) — mechanical, and they catch the next two findings.
+3. Findings 9 and 10 — small, and they close the "secrets" chapter.
+4. Findings 7, 11, 12 — naming and housekeeping.

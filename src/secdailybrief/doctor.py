@@ -109,7 +109,12 @@ def verifier_configuration(reglages: dict) -> Verification:
 def verifier_secret(jetons: dict) -> Verification:
     if not jetons.get("smtp_password"):
         return Verification("Mot de passe", ECHEC, "aucun mot de passe enregistre")
-    return Verification("Mot de passe", OK, "chiffre DPAPI, dechiffrable par ce compte")
+    if sys.platform == "win32":
+        return Verification("Mot de passe", OK, "chiffre DPAPI, dechiffrable par ce compte")
+    # Sous Linux, le secret vit dans le trousseau du bureau ou, a defaut, dans un fichier 0600.
+    # Annoncer « DPAPI » la-bas etait faux, et le diagnostic doit dire ce qui est.
+    return Verification("Mot de passe", OK,
+                        "protege par le trousseau du bureau, ou fichier 0600 a defaut")
 
 
 def verifier_fuseau(reglages: dict) -> Verification:
