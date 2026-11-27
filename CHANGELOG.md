@@ -8,6 +8,15 @@ happened since the last tag.
 
 ### Fixed
 
+- **The daily report no longer accepts `javascript:` or `data:` links.** The alert renderer
+  checked the scheme; the report did not, and rendered hrefs from five lists straight out of feed
+  content. Escaping stops an attribute breakout, not a scheme — and the report opens in the
+  browser. A crafted feed link now appears as plain text, and a test renders one to prove it.
+- **A scheduling failure is no longer silent.** `_programmer` swallowed both exceptions: the user
+  believed the task was installed, the panel said "no run yet", and nothing explained why. The
+  failure now reaches the journal and the status line, in nine languages.
+- **The diagnostic stopped announcing DPAPI on Linux**, where the secret lives in the desktop
+  keyring or a `0600` file.
 - **Hackmageddon failed on every run** with `unreadable feed`, and the report said so in its
   warning line. The feed is fine: its host closes the connection when the client accepts gzip,
   and answers normally when it asks for `identity`. The fetcher already retried with a reader
@@ -23,10 +32,11 @@ happened since the last tag.
 
 ### Changed
 
-- The engine is re-pinned to e4932ae, which also fixes the silent-source banner: it now measures
-  what a feed publishes rather than what we keep. CERT-EU, Microsoft Security, Dark Reading, SANS
-  ISC and Unit 42 were reported silent for 33 days while all five had published within 48 hours —
-  their items are filtered out, so no row was ever written, so a busy feed looked dead.
+- The engine is re-pinned to `19eee7d`, which adds the link-scheme filter described above to the
+  silent-source and compression fixes (`e4932ae`). It also stops measuring a feed's silence on
+  what we keep: CERT-EU, Microsoft Security, Dark Reading, SANS ISC and Unit 42 were reported
+  silent for 33 days while all five had published within 48 hours — their items are filtered out,
+  so no row was ever written, so a busy feed looked dead.
 
 ## 1.7.6 — 27 November 2026
 
