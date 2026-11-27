@@ -27,7 +27,7 @@ before every build and every run, and never writes to it.
 | # | Finding | Severity | Status |
 |---|---|---|---|
 | 1 | The Linux binary had never been run | high | resolved 26 Nov |
-| 2 | A plain-text PAT and backup codes, readable by any local account | high | open, user action |
+| 2 | A plain-text PAT and backup codes in a pCloud-synced folder | high | **partly resolved 27 Nov** |
 | 3 | No dependency monitoring | medium | **fixed 27 Nov** |
 | 4 | No code scanning in either repository | medium | **fixed 27 Nov** |
 | 5 | Scheduling failures swallowed in silence | medium | **fixed 27 Nov** |
@@ -49,30 +49,25 @@ Both analyses ran on 27 November and succeeded (runs 46025398124 and 46025229173
 themselves could not be listed from here: the fine-grained token has no security-events read
 permission — a limitation of the token, not of the workflow. The Security tab shows them.
 
-### 2. Two credential files readable by every local account, open
+### 2. Credentials in a cloud-synced folder, partly resolved
 
-D:\ is a data drive, not the system drive — the first version of this audit said otherwise and
-was wrong. The drive is not the problem; the permissions are. Three files
-(jeton-secdailybrief.txt.txt, stripe_backup_code.txt, mc_backup-codes.txt) carry the
-inherited ACL of the drive root:
+D:\ is a data drive **synchronised with pCloud** — the first version of this audit called it the
+system drive, which was wrong, and missed the part that matters. The drive's inherited ACL also
+gave Authenticated Users and BUILTIN\Users the right to **modify** whatever it contained.
 
-| Principal | Rights |
-|---|---|
-| DESKTOP-…\itsan (owner) | Full control |
-| BUILTIN\Administrators | Full control |
-| NT AUTHORITY\SYSTEM | Full control |
-| NT AUTHORITY\Authenticated Users | **Modify** |
-| BUILTIN\Users | **Modify** |
+So the personal access token and the two sets of recovery codes were being uploaded to a cloud
+account, on files any local account could read and rewrite.
 
-Any account that can log on to this machine can read — and modify — the personal access token and
-the two sets of recovery codes. Whether D: is encrypted could not be checked without elevation,
-and pCloud is installed: if this drive is inside a synced folder, the files also leave the machine.
+What was done on 27 November:
 
-The fix is one command per file, and it keeps the owner's access:
+- the token was revoked in GitHub, and the API answers 401 since;
+- stripe_backup_code.txt and mc-backup-codes.txt were moved to
+  C:\Users\itsan\AppData\Roaming\clefs-sensibles\, whose ACL now grants the owner alone;
+- the revoked token file was left in place for its owner to clean, since the token inside is dead.
 
-`
-icacls D:\fichier.txt /inheritance:r /grant:r %USERNAME%:(R,W)
-`
+What remains, and only the owner can do it: **the recovery codes must be regenerated.** Moving a
+file out of a synced folder does not remove it from pCloud's trash or version history — the codes
+which were uploaded are compromised by definition.
 
 ### 5. Scheduling failures swallowed, fixed
 
