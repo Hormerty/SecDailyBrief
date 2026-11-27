@@ -28,8 +28,8 @@ before every build and every run, and never writes to it.
 |---|---|---|---|
 | 1 | The Linux binary had never been run | high | resolved 26 Nov |
 | 2 | A plain-text PAT and backup codes on the system drive | high | open, user action |
-| 3 | No dependency monitoring | medium | open |
-| 4 | No code scanning in either repository | medium | open |
+| 3 | No dependency monitoring | medium | **fixed 27 Nov** |
+| 4 | No code scanning in either repository | medium | **fixed 27 Nov** |
 | 5 | Scheduling failures swallowed in silence | medium | **fixed 27 Nov** |
 | 6 | Doctor announced DPAPI on Linux | medium | **fixed 27 Nov** |
 | 7 | `secret.dpapi` names a Windows mechanism | low | open |
@@ -38,6 +38,16 @@ before every build and every run, and never writes to it.
 | 10 | `tzdata` is not pinned | low | open |
 | 11 | No `SECURITY.md` | process | open |
 | 12 | Three stale local branches | housekeeping | open |
+
+### 3 and 4. Dependency monitoring and code scanning, fixed
+
+dependabot.yml opens one grouped pull request a week for pip and for the actions, in this
+repository; the engine already had its own. codeql.yml runs on push, on pull requests and
+weekly, with security-and-quality queries, in both repositories.
+
+Both analyses ran on 27 November and succeeded (runs 46025398124 and 46025229173). The alerts
+themselves could not be listed from here: the fine-grained token has no security-events read
+permission — a limitation of the token, not of the workflow. The Security tab shows them.
 
 ### 5. Scheduling failures swallowed, fixed
 
