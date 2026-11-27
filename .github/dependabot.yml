@@ -1,0 +1,29 @@
+version: 2
+# Surveillance des dépendances : une PR par semaine au plus, et groupée.
+#
+# Sans cela, une faille dans requests ou feedparser ne se signalait qu'en la lisant quelque part.
+# Les mises à jour mineures arrivent ensemble pour ne pas noyer le dépôt ; une majeure reste seule,
+# parce qu'elle demande une décision.
+
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      python-mineur:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      actions-mineur:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]

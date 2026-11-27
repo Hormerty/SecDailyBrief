@@ -1,0 +1,49 @@
+name: CodeQL
+
+# Analyse statique : elle cherche les motifs dangereux (injection, chemin non validé, secret en
+# dur) que la relecture humaine laisse passer. Elle tourne à chaque poussée sur main, sur chaque
+# PR, et une fois par semaine pour rattraper les règles nouvelles.
+#
+# Distinct de tests.yml : celui-ci n'exécute rien du programme, il le lit.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "27 3 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: python
+          # security-and-quality ajoute les règles de maintenabilité aux règles de sécurité :
+          # une fonction qui avale ses exceptions est un défaut, pas seulement une maladresse.
+          queries: security-and-quality
+
+      # Les dépendances installées permettent à l'analyse de résoudre les imports et de suivre
+      # les flux de données à travers requests et feedparser.
+      - name: Dépendances
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-dev.txt
+
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:python"
