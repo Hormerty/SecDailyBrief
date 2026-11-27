@@ -527,3 +527,14 @@ def test_about_efface_la_ligne_engine_si_le_verrou_manque(application, monkeypat
     assert lignes[0].startswith("SecDailyBrief ")
     assert not any(application._texte("about.moteur") in ligne for ligne in lignes)
     assert "?" not in "".join(lignes)
+
+def test_la_fenetre_about_n_a_pas_de_libelle_anglais_en_francais():
+    """L'interface francaise affichait « About », « Engine », « License », « Repository » :
+    le titre et les libelles n'avaient jamais ete traduits."""
+    from secdailybrief import i18n
+
+    fr = i18n.textes("fr")
+    en = i18n.textes("en")
+
+    for cle in ("about.titre", "about.moteur", "about.licence", "about.depot"):
+        assert fr[cle] != en[cle], f"{cle} n'est pas traduit"
