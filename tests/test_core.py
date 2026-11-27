@@ -127,3 +127,63 @@ def test_verrou_libere_apres_usage():
         assert premiere is True
     with lock.instance_unique(nom) as seconde:
         assert seconde is True
+
+# --- Trousseau Linux : le secret ne passe pas par la ligne de commande ---------------------
+
+def test_le_secret_passe_par_l_entree_standard(monkeypatch):
+    """Un secret en argument serait lisible dans `ps` par tout le monde."""
+    pytest.importorskip("fcntl")      # module Linux : ces tests ne valent que la-bas
+    from secdailybrief.plateforme import linux
+
+    appels = []
+
+    class Resultat:
+        returncode = 0
+        stdout = b""
+
+    def faux_run(commande, **options):
+        appels.append((commande, options))
+        return Resultat()
+
+    monkeypatch.setattr(linux.subprocess, "run", faux_run)
+
+    linux._secret_tool("store", "--label=SecDailyBrief", "service", "SecDailyBrief",
+                       entree="s3cr3t")
+
+    commande, options = appels[0]
+    assert "s3cr3t" not in " ".join(commande)
+    assert options["input"] == b"s3cr3t"
+
+
+def test_store_du_trousseau_appelle_l_entree_standard(monkeypatch):
+    """`value=` sur une fonction sans mot-cle levait un TypeError : CodeQL l'a releve."""
+    pytest.importorskip("fcntl")      # module Linux : ces tests ne valent que la-bas
+    from secdailybrief.plateforme import linux
+
+    vus = {}
+
+    def faux_secret_tool(*arguments, entree=None):
+        vus["arguments"] = arguments
+        vus["entree"] = entree
+
+        class Resultat:
+            returncode = 0
+            stdout = b""
+
+        return Resultat()
+
+    monkeypatch.setattr(linux, "TROUSSEAU_DISPONIBLE", True)
+    monkeypatch.setattr(linux, "_secret_tool", faux_secret_tool)
+
+    assert linux.chiffrer("mon-secret") == b"secret-service"
+    assert vus["arguments"][0] == "store"
+    assert vus["entree"] == "mon-secret"
+
+
+def test_sans_trousseau_le_secret_reste_dans_le_fichier(monkeypatch):
+    pytest.importorskip("fcntl")      # module Linux : ces tests ne valent que la-bas
+    from secdailybrief.plateforme import linux
+
+    monkeypatch.setattr(linux, "TROUSSEAU_DISPONIBLE", False)
+
+    assert linux.chiffrer("mon-secret") == b"mon-secret"

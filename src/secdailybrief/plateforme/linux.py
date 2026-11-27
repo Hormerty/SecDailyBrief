@@ -31,8 +31,15 @@ ATTRIBUTS = ("service", "SecDailyBrief")
 TROUSSEAU_DISPONIBLE = shutil.which("secret-tool") is not None
 
 
-def _secret_tool(*arguments: str) -> subprocess.CompletedProcess:
-    return subprocess.run(["secret-tool", *arguments], capture_output=True, check=False)
+def _secret_tool(*arguments: str, entree: str | None = None) -> subprocess.CompletedProcess:
+    """Appelle secret-tool. Le secret passe par l'entrée standard, jamais par la ligne de
+    commande : un argument serait lisible dans ps par tout utilisateur de la machine.
+
+    store attend le secret sur son entrée standard ; le passer en argument levait de toute
+    façon un TypeError, relevé par CodeQL le 27 novembre 2026.
+    """
+    return subprocess.run(["secret-tool", *arguments], capture_output=True, check=False,
+                          input=None if entree is None else entree.encode("utf-8"))
 
 
 def _cle() -> list[str]:
@@ -50,7 +57,7 @@ def chiffrer(texte: str) -> bytes:
     base64 de clair, protégé par les droits du fichier (0600) — ce que le diagnostic annonce.
     """
     if TROUSSEAU_DISPONIBLE:
-        resultat = _secret_tool("store", "--label=SecDailyBrief", *_cle(), value=texte)
+        resultat = _secret_tool("store", "--label=SecDailyBrief", *_cle(), entree=texte)
         if resultat.returncode == 0:
             # Le trousseau a le secret ; le fichier ne garde qu'un marqueur.
             return b"secret-service"
