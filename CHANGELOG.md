@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.7.5 — 27 November 2026
+
+### Added
+
+- **The alert channels now explain themselves.** Discord, Slack and Telegram each carry a blue
+  question mark: hovering shows one sentence about what to paste, in the nine interface
+  languages, and clicking opens [docs/ALERTES.md](docs/ALERTES.md) at the right section. That
+  page gives the exact menu path, three illustrations, and the errors that go with each channel:
+  `401` for a wrong token, `403` for a bot that is not in the chat, and `discord.gg` addresses
+  that look like webhooks but are invitations.
+- The chat alert header now carries the time it was sent and no longer uses an em dash:
+  `SecDailyBrief · 3 alerte(s) · 27/11 11:48`. Three days later in a channel, nothing said when
+  the alert had gone out. (Engine commit `4e076dd`, re-pinned below.)
+
+### Fixed
+
+- **The About window announced version 1.0.0.** The number had been written by hand and never
+  touched again, so the window contradicted the panel, the badge and the archive names. It now
+  reads the package version, through a method that a test can check without opening a window.
+
+### Changed
+
+- The engine is re-pinned to `4e076dd` (238 453 bytes,
+  `5f9d18f8f0c014b50406f07de1de161d084f7355e3b2cd5825db34db90705552`).
+
 ## 1.7.4 — 27 November 2026
 
 ### Fixed

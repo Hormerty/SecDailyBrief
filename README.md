@@ -14,6 +14,7 @@
 
 - [What it does](#what-it-does)
 - [Why not an RSS reader?](#why-not-an-rss-reader)
+- [Connecting the alert channels](docs/ALERTES.md)
 - [Installation](#installation)
 - [Principles](#principles)
 - [Development](#development): [packaging](#packaging), [versioning](#versioning),
@@ -35,7 +36,8 @@
   presented as if three outlets had confirmed it. A source that stops answering is counted and
   named in the report rather than silently dropped.
 - **Alerts within three hours**, by e-mail, Slack, Discord or Telegram, on top of the daily
-  report, and each channel is a checkbox.
+  report, and each channel is a checkbox. Each address field explains itself: hover for one
+  sentence, click for the step-by-step guide in [docs/ALERTES.md](docs/ALERTES.md).
 - **Nine interface languages**: French, English, Dutch, German, Spanish, Italian, Portuguese,
   Hindi, Chinese.
 - **Windows and Linux**, both built and tested in CI, and the Linux build verified by hand.
