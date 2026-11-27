@@ -421,3 +421,27 @@ def test_about_suit_une_version_differente(application, monkeypatch):
     monkeypatch.setattr(app, "version_actuelle", "9.9.9")
 
     assert application._lignes_about()[0] == "SecDailyBrief 9.9.9"
+
+# --- Aide des canaux : le « ? » a côté de Discord, Slack et Telegram ----------------------
+
+def test_chaque_canal_a_son_aide(application):
+    """Les champs ne disaient pas quoi y coller : un « ? » par canal, qui mène à sa section."""
+    application.reglages["email_user"] = "bot@example.com"
+    application.page_planification()
+
+    assert set(application.aides_canaux) == {"slack", "discord", "telegram"}
+    for ancre, aide in application.aides_canaux.items():
+        assert application._url_aide(ancre).endswith(f"docs/ALERTES.md#{ancre}")
+        # Le « ? » est dans la troisieme colonne, a droite du champ.
+        assert aide.grid_info()["column"] == 2
+
+
+def test_l_aide_survolee_existe_dans_les_neuf_langues():
+    """Le test de parité verifie la presence des cles ; celui-ci verifie qu'elles disent
+    quelque chose, et que la traduction n'est pas restee vide."""
+    from secdailybrief import i18n
+
+    for code in i18n.TEXTES:
+        textes = i18n.textes(code)
+        for cle in ("alertes.aide.discord", "alertes.aide.slack", "alertes.aide.telegram"):
+            assert textes[cle].strip(), f"{code} : {cle} vide"

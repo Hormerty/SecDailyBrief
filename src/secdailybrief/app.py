@@ -28,6 +28,8 @@ from . import engine, fuseau, historique, i18n, logging_setup, mail, paths, runn
 TAILLE_MIN = (760, 540)
 URL_MOT_DE_PASSE = "https://myaccount.google.com/apppasswords"
 URL_SOUTIEN = "https://www.buymeacoffee.com/bsky.scl"
+# Page du depot qui explique, canal par canal, quoi coller dans ces champs.
+URL_ALERTES = ("https://github.com/Hormerty/SecDailyBrief/blob/main/docs/ALERTES.md")
 URL_DEPOT = "https://github.com/Hormerty/Sec_Daily_report-"
 NBSP = "\u00a0"
 
@@ -94,6 +96,8 @@ class Application:
         self.textes = i18n.textes(self.langue)
         self.mot_de_passe = self.jetons.get("smtp_password", "")
         self.brouillon = dict(self.reglages)
+        # Les « ? » posés à côté des canaux, pour que les tests les retrouvent.
+        self.aides_canaux: dict[str, tk.Widget] = {}
         self.taille = int(self.reglages.get("taille_texte") or 10)
         self._maj_verifiee = False
         self._perimetre_en_attente = configuration.valider_perimetre(self.perimetre)
@@ -621,10 +625,14 @@ class Application:
                         variable=self.var_slack_on).grid(row=2, column=0, sticky="w", pady=(6, 0))
         ttk.Entry(canaux, textvariable=self.var_slack, width=52).grid(
             row=2, column=1, sticky="we", pady=(6, 0))
+        self._aide_canal(canaux, 2, "slack", self.var_slack, self.var_slack_on,
+                         self._texte("alertes.aide.slack"))
         ttk.Checkbutton(canaux, text=self._texte("alertes.discord"),
                         variable=self.var_discord_on).grid(row=3, column=0, sticky="w")
         ttk.Entry(canaux, textvariable=self.var_discord, width=52).grid(
             row=3, column=1, sticky="we")
+        self._aide_canal(canaux, 3, "discord", self.var_discord, self.var_discord_on,
+                         self._texte("alertes.aide.discord"))
         ttk.Checkbutton(canaux, text=self._texte("alertes.telegram"),
                         variable=self.var_telegram_on).grid(row=4, column=0, sticky="w")
         telegram = ttk.Frame(canaux)
@@ -632,6 +640,9 @@ class Application:
         telegram.columnconfigure(0, weight=1)
         ttk.Entry(telegram, textvariable=self.var_telegram_token, width=34).grid(
             row=0, column=0, sticky="we")
+        self._aide_canal(canaux, 4, "telegram", self.var_telegram_token,
+                         self.var_telegram_on, self._texte("alertes.aide.telegram"),
+                         colonne=2)
         ttk.Entry(telegram, textvariable=self.var_telegram_chat, width=16).grid(
             row=0, column=1, sticky="w", padx=(6, 0))
         ttk.Label(canaux, text=self._texte("alertes.aide"), foreground="#555").grid(
@@ -643,6 +654,55 @@ class Application:
                    command=self._precedent_planification).pack(side="left")
         ttk.Button(barre, text=self._texte("wizard.terminer"),
                    command=self._terminer).pack(side="right")
+
+    def _aide_canal(self, parent, ligne: int, ancre: str, variable, active, texte: str,
+                    colonne: int = 2) -> None:
+        """Un « ? » bleu : infobulle au survol, page d'aide au clic.
+
+        Les champs Discord, Slack et Telegram ne disaient pas ce qu'il fallait y coller. Tk
+        n'a pas d'infobulle native : elle est donc construite ici, et déclenchée après un
+        demi-seconde de survol pour ne pas surgir au passage de la souris.
+        """
+        aide = ttk.Label(parent, text="?", foreground="#1a73e8", cursor="hand2",
+                         font=self._titre(11))
+        aide.grid(row=ligne, column=colonne, sticky="w", padx=(6, 0))
+        aide.bind("<Button-1>", lambda _event: webbrowser.open(self._url_aide(ancre)))
+        self.aides_canaux[ancre] = aide
+        self._info_bulle(aide, texte)
+
+    def _url_aide(self, ancre: str) -> str:
+        """L'adresse de la page d'aide, ancree sur le canal."""
+        return f"{URL_ALERTES}#{ancre}"
+
+    def _info_bulle(self, widget, texte: str) -> None:
+        etat = {"fenetre": None, "attente": None}
+
+        def montrer():
+            etat["attente"] = None
+            if etat["fenetre"] or not texte:
+                return
+            x = widget.winfo_rootx() + widget.winfo_width() + 10
+            y = widget.winfo_rooty() - 6
+            fenetre = tk.Toplevel(self.racine)
+            fenetre.wm_overrideredirect(True)
+            fenetre.wm_geometry(f"+{x}+{y}")
+            ttk.Label(fenetre, text=texte, padding=(8, 5), background="#ffffe0",
+                      relief="solid", borderwidth=1, wraplength=320,
+                      justify="left").pack()
+            etat["fenetre"] = fenetre
+
+        def cacher(_event=None):
+            if etat["attente"]:
+                self.racine.after_cancel(etat["attente"])
+                etat["attente"] = None
+            if etat["fenetre"]:
+                etat["fenetre"].destroy()
+                etat["fenetre"] = None
+
+        widget.bind("<Enter>", lambda _e: etat.update(attente=self.racine.after(500, montrer)),
+                    add="+")
+        widget.bind("<Leave>", cacher, add="+")
+        widget.bind("<ButtonPress>", cacher, add="+")
 
     def _collecter_canaux(self) -> None:
         """Mémorise les canaux saisis, sans rien écrire sur disque.
