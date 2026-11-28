@@ -87,15 +87,23 @@ def canaux_alerte(config: dict, jetons: dict[str, str] | None = None) -> list[di
 
 
 def environnement(config: dict, mot_de_passe: str, dossier: Path,
-                  jetons: dict[str, str] | None = None) -> dict[str, str]:
+                  jetons: dict[str, str] | None = None,
+                  journal: logging.Logger | None = None) -> dict[str, str]:
     """Environnement du processus enfant, construit explicitement.
 
     Les variables EMAIL_* et SMTP_* héritées du shell sont retirées : sur un poste de
     développement elles traîneraient sinon d'un test à l'autre, et l'utilisateur ne
     saurait plus quelle configuration a réellement servi.
     """
+    # Sans ce repli, `journal.warning` levait un NameError dans le chemin de secours des
+    # certificats : le message d'aide devenait une panne. Le defaut est le journal du module,
+    # et `executer` passe le sien.
+    journal = journal or logging.getLogger(__name__)
+    # Les variables d'un secret ne doivent pas entrer dans l'environnement de l'enfant par
+    # heritage : une variable parasite de l'hote ferait passer une cle qu'on croyait absente.
     env = {cle: valeur for cle, valeur in os.environ.items()
-           if not cle.startswith(("EMAIL_", "SMTP_", "WEBHOOKS"))}
+           if not cle.startswith(("EMAIL_", "SMTP_", "WEBHOOKS", "NVD_API_KEY",
+                                  "RANSOMWARE_API_KEY", "GITHUB_TOKEN"))}
     # « requests » cherche son paquet de certificats dans l'environnement. Dans un binaire fige,
     # il ne le trouve pas toujours seul : « Could not find a suitable TLS CA certificate
     # bundle », une execution morte en 0,1 s et aucun rapport envoye. On le lui donne.
@@ -132,8 +140,16 @@ def environnement(config: dict, mot_de_passe: str, dossier: Path,
     for cle_config, cle_env in (("nvd_api_key", "NVD_API_KEY"),
                                 ("ransomware_api_key", "RANSOMWARE_API_KEY"),
                                 ("github_token", "GITHUB_TOKEN")):
-        if config.get(cle_config):
-            env[cle_env] = config[cle_config]
+        # Une cle d'API est un secret : elle vit dans le magasin chiffre. La lire dans
+        # config.json la laissait en clair sur le disque, alors que le mot de passe SMTP et les
+        # webhooks sont ranges ailleurs. L'ancien emplacement reste lu, en le signalant.
+        valeur = (jetons or {}).get(cle_config)
+        if not valeur and config.get(cle_config):
+            journal.warning(
+                "%s trouvee dans config.json : deplacez-la dans le magasin chiffre.", cle_config)
+            valeur = config[cle_config]
+        if valeur:
+            env[cle_env] = valeur
     return env
 
 
@@ -227,7 +243,7 @@ def executer(config: dict, mot_de_passe: str, journal: logging.Logger, *,
             journal.warning("Reseau injoignable : execution reportee, la journee reste ouverte.")
             return Resultat("reseau")
 
-        env = environnement(config, mot_de_passe, dossier, jetons)
+        env = environnement(config, mot_de_passe, dossier, jetons, journal)
         debut = time.monotonic()
         processus = subprocess.Popen(
             commande_moteur(mode), cwd=str(dossier), env=env,

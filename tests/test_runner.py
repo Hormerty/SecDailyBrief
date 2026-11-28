@@ -290,3 +290,70 @@ def test_executer_moteur_appelle_les_bonnes_fonctions(monkeypatch):
     point_entree.executer_moteur("rapport")
 
     assert appels == ["feeds", "liens", "rapport"]
+
+# --- Remarques sur runner.py --------------------------------------------------------------
+
+def _config(**extra):
+    base = {"email_user": "a@b.c", "timezone": "Europe/Brussels"}
+    base.update(extra)
+    return base
+
+
+def test_environnement_fonctionne_sans_journal(tmp_path):
+    """Il levait un NameError dans le chemin de secours des certificats : l'aide devenait une panne."""
+    from pathlib import Path
+
+    from secdailybrief import runner
+
+    env = runner.environnement(_config(), "motdepasse", Path("."), {})
+    assert env["EMAIL_PASSWORD"] == "motdepasse"
+
+
+def test_sans_cacert_l_environnement_ne_leve_pas(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from secdailybrief import runner
+
+    monkeypatch.setattr("certifi.where", lambda: str(tmp_path / "absent.pem"))
+    env = runner.environnement(_config(), "x", Path("."), {})
+    assert "REQUESTS_CA_BUNDLE" not in env      # absent : rien n'est pose, rien ne casse
+
+
+def test_une_cle_api_vient_du_magasin_chiffre(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from secdailybrief import runner
+
+    env = runner.environnement(_config(nvd_api_key="depuis-config"), "x", Path("."),
+                               {"nvd_api_key": "depuis-coffre"})
+    assert env["NVD_API_KEY"] == "depuis-coffre"
+
+
+def test_une_cle_api_restee_dans_config_est_signalee(tmp_path):
+    from pathlib import Path
+
+    import logging
+
+    from secdailybrief import runner
+
+    journal = logging.getLogger("test-runner-revue")
+    enregistre = []
+    journal.warning = lambda *a, **k: enregistre.append(a[0] % a[1:] if len(a) > 1 else a[0])
+
+    env = runner.environnement(_config(github_token="en-clair"), "x", Path("."), {}, journal)
+
+    assert env["GITHUB_TOKEN"] == "en-clair"          # compatibilite : la cle passe encore
+    assert any("config.json" in message for message in enregistre)   # mais on le dit
+
+
+def test_les_variables_heritees_de_secrets_ne_passent_pas(tmp_path, monkeypatch):
+    """Une variable parasite de l'hote ferait passer une cle qu'on croyait absente."""
+    from pathlib import Path
+
+    from secdailybrief import runner
+
+    monkeypatch.setenv("GITHUB_TOKEN", "jeton-de-l-hote")
+    monkeypatch.setenv("NVD_API_KEY", "cle-de-l-hote")
+    env = runner.environnement(_config(), "x", Path("."), {})
+    assert "GITHUB_TOKEN" not in env
+    assert "NVD_API_KEY" not in env
