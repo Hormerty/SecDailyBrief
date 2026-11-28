@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest==9.1.1", "pyinstaller"]
+dev = ["pytest==9.2.0", "pyinstaller"]
 
 [project.gui-scripts]
 SecDailyBrief = "secdailybrief.__main__:main"
