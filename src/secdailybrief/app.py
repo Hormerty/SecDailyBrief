@@ -729,11 +729,12 @@ class Application:
             {"slack": self.var_slack_on.get(), "discord": self.var_discord_on.get(),
              "telegram": self.var_telegram_on.get()},
             {"slack": self.var_slack.get(), "discord": self.var_discord.get(),
-             "telegram": self.var_telegram_token.get()},
+             "telegram": self.var_telegram_token.get(),
+             "telegram_chat": self.var_telegram_chat.get()},
         )
         if raison is None:
             return None
-        canal = "Telegram" if raison == "jeton" else (
+        canal = "Telegram" if raison in ("jeton", "chat") else (
             "Slack" if self.var_slack_on.get() else "Discord")
         if raison == "vide" and self.var_telegram_on.get() and not self.var_telegram_token.get().strip():
             canal = "Telegram"

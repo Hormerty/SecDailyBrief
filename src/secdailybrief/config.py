@@ -14,6 +14,8 @@ fichier séparé ; un JSON lisible qui contiendrait un jeton annulerait la préc
 """
 from __future__ import annotations
 
+import re
+
 import json
 import os
 import re
@@ -182,11 +184,15 @@ def enregistrer_perimetre(dossier: Path, perimetre: dict) -> None:
 
 
 def canaux_invalides(actifs: dict[str, bool], valeurs: dict[str, str]) -> str | None:
-    """Ce qui empêcherait un canal de fonctionner : « vide », « url », « jeton » ou None.
+    """Ce qui empêcherait un canal de fonctionner : « vide », « url », « jeton », « chat » ou None.
 
     Un webhook et un jeton sont des secrets qu'on ne peut pas deviner : une faute de frappe ne se
-    voit pas, elle se traduit par une alerte qui ne part jamais. Ces quatre cas se refusent au
-    moment de l'enregistrement, pas trois jours plus tard devant un silence.
+    voit pas, elle se traduit par une alerte qui ne part jamais. Ces cas se refusent au moment de
+    l'enregistrement, pas trois jours plus tard devant un silence.
+
+    Telegram demande deux valeurs : le jeton dit qui parle, l'identifiant de conversation dit à qui.
+    `runner.canaux_alerte` exige les deux et écarte le canal en silence quand l'un manque : un
+    identifiant vide laissait donc un canal coché, muet, et sans le moindre message.
     """
     for nom in ("slack", "discord"):
         valeur = (valeurs.get(nom) or "").strip()
@@ -204,4 +210,12 @@ def canaux_invalides(actifs: dict[str, bool], valeurs: dict[str, str]) -> str | 
             return "vide"
         if ":" not in jeton or len(jeton) < 20:
             return "jeton"
+        # L'identifiant de conversation : un nombre (toi), un nombre negatif (un groupe) ou
+        # @nom_de_canal. On verifie la forme, pas l'existence : un identifiant bien forme mais
+        # inconnu ne se detecte qu'a l'envoi, faute d'un bouton pour tester le canal.
+        chat = (valeurs.get("telegram_chat") or "").strip()
+        if not chat:
+            return "vide"
+        if not re.fullmatch(r"@\w+|-\d+|\d+", chat):
+            return "chat"
     return None

@@ -22,8 +22,9 @@ def test_un_jeton_telegram_improbable_est_refuse():
 
     assert config.canaux_invalides({"telegram": True},
                                    {"telegram": "abc"}) == "jeton"
+    jeton = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi"
     assert config.canaux_invalides({"telegram": True},
-                                   {"telegram": "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi"}) is None
+                                   {"telegram": jeton, "telegram_chat": "-1001234567890"}) is None
 
 
 def test_un_canal_inactif_n_est_pas_valide():
@@ -32,3 +33,28 @@ def test_un_canal_inactif_n_est_pas_valide():
 
     assert config.canaux_invalides({"slack": False}, {"slack": ""}) is None
     assert config.canaux_invalides({}, {}) is None
+
+def test_un_identifiant_de_conversation_vide_est_refuse():
+    """Le canal etait coche, muet, et rien ne le disait : runner exige les deux valeurs."""
+    from secdailybrief import config
+
+    jeton = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi"
+    assert config.canaux_invalides({"telegram": True},
+                                   {"telegram": jeton, "telegram_chat": "  "}) == "vide"
+
+
+def test_un_identifiant_de_conversation_mal_forme_est_refuse():
+    from secdailybrief import config
+
+    jeton = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi"
+    assert config.canaux_invalides({"telegram": True},
+                                   {"telegram": jeton, "telegram_chat": "mon groupe"}) == "chat"
+
+
+def test_les_formes_valides_d_identifiant_sont_acceptees():
+    from secdailybrief import config
+
+    jeton = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi"
+    for chat in ("-1001234567890", "123456789", "@moncanal"):
+        assert config.canaux_invalides({"telegram": True},
+                                       {"telegram": jeton, "telegram_chat": chat}) is None

@@ -48,6 +48,7 @@ TEXTES: dict[str, dict[str, str]] = {
     "canaux.vide": "le canal est actif mais son adresse est vide",
     "canaux.url": "l'adresse doit commencer par https://",
     "canaux.jeton": "ce jeton ne ressemble pas a un jeton de bot",
+    "canaux.chat": "l'identifiant de conversation doit etre un nombre, un nombre negatif ou @nom",
         "courriel.outlook": "Outlook exige une authentification moderne, prévue pour la "
                             "version 2. Utilisez pour l'instant un autre fournisseur.",
         "stack.titre": "Votre stack",
@@ -172,6 +173,7 @@ TEXTES: dict[str, dict[str, str]] = {
     "canaux.vide": "the channel is on but its address is empty",
     "canaux.url": "the address must start with https://",
     "canaux.jeton": "this token does not look like a bot token",
+    "canaux.chat": "the chat id must be a number, a negative number or @name",
         "courriel.outlook": "Outlook requires modern authentication, planned for version 2. "
                             "Use another provider for now.",
         "stack.titre": "Your stack",
@@ -295,6 +297,7 @@ TEXTES: dict[str, dict[str, str]] = {
     "canaux.vide": "het kanaal staat aan maar het adres is leeg",
     "canaux.url": "het adres moet met https:// beginnen",
     "canaux.jeton": "dit token lijkt niet op een bot-token",
+    "canaux.chat": "de chat-id moet een getal, een negatief getal of @naam zijn",
         "courriel.outlook": "Outlook vereist moderne authenticatie, gepland voor versie 2. "
                             "Gebruik voorlopig een andere provider.",
         "stack.titre": "Je stack",
@@ -420,6 +423,7 @@ TEXTES: dict[str, dict[str, str]] = {
     "canaux.vide": "der Kanal ist aktiv, aber die Adresse ist leer",
     "canaux.url": "die Adresse muss mit https:// beginnen",
     "canaux.jeton": "dieses Token sieht nicht wie ein Bot-Token aus",
+    "canaux.chat": "die Chat-ID muss eine Zahl, eine negative Zahl oder @name sein",
         "courriel.outlook": "Outlook verlangt moderne Authentifizierung, vorgesehen für "
                             "Version 2. Nutzen Sie bis dahin einen anderen Anbieter.",
         "stack.titre": "Ihr Stack",
@@ -545,6 +549,7 @@ TEXTES: dict[str, dict[str, str]] = {
     "canaux.vide": "el canal esta activo pero su direccion esta vacia",
     "canaux.url": "la direccion debe empezar por https://",
     "canaux.jeton": "este token no parece un token de bot",
+    "canaux.chat": "el id de conversacion debe ser un numero, un numero negativo o @nombre",
         "courriel.outlook": "Outlook exige autenticación moderna, prevista para la versión 2. "
                             "Mientras tanto, utilice otro proveedor.",
         "stack.titre": "Su stack",
@@ -670,6 +675,7 @@ TEXTES: dict[str, dict[str, str]] = {
     "canaux.vide": "il canale e attivo ma il suo indirizzo e vuoto",
     "canaux.url": "l'indirizzo deve iniziare con https://",
     "canaux.jeton": "questo token non sembra un token di bot",
+    "canaux.chat": "l'id della chat deve essere un numero, un numero negativo o @nome",
         "courriel.outlook": "Outlook richiede l'autenticazione moderna, prevista per la "
                             "versione 2. Nel frattempo usa un altro provider.",
         "stack.titre": "Il tuo stack",
@@ -796,6 +802,7 @@ TEXTES: dict[str, dict[str, str]] = {
     "canaux.vide": "o canal esta ativo mas o endereco esta vazio",
     "canaux.url": "o endereco deve comecar por https://",
     "canaux.jeton": "este token nao parece um token de bot",
+    "canaux.chat": "o id da conversa deve ser um numero, um numero negativo ou @nome",
         "courriel.outlook": "O Outlook exige autenticação moderna, prevista para a versão 2. "
                             "Até lá, utilize outro fornecedor.",
         "stack.titre": "O seu stack",
@@ -921,6 +928,7 @@ TEXTES: dict[str, dict[str, str]] = {
     "canaux.vide": "चैनल चालू है पर उसका पता खाली है",
     "canaux.url": "पता https:// से शुरू होना चाहिए",
     "canaux.jeton": "यह टोकन बॉट टोकन जैसा नहीं लगता",
+    "canaux.chat": "चैट आईडी संख्या, ऋणात्मक संख्या या @नाम होनी चाहिए",
         "courriel.outlook": "Outlook के लिए आधुनिक प्रमाणीकरण चाहिए, जो संस्करण 2 में आएगा। "
                             "तब तक दूसरा प्रदाता इस्तेमाल करें।",
         "stack.titre": "आपका स्टैक",
@@ -1040,6 +1048,7 @@ TEXTES: dict[str, dict[str, str]] = {
     "canaux.vide": "通道已开启但地址为空",
     "canaux.url": "地址必须以 https:// 开头",
     "canaux.jeton": "该令牌不像机器人令牌",
+    "canaux.chat": "会话 ID 必须是数字、负数或 @名称",
         "courriel.outlook": "Outlook 需要新式身份验证，计划在版本 2 中支持。目前请使用其他"
                             "服务商。",
         "stack.titre": "您的技术栈",
