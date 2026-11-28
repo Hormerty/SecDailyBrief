@@ -613,7 +613,9 @@ def test_les_erreurs_de_reglages_sont_affichees_en_clair(application):
     libelles = application._libelles(problemes)
 
     assert "courriel.expediteur" not in libelles
-    assert "Adresse d'envoi" in libelles
+    # Le libellé attendu vient de la langue de l'application, pas d'une chaîne française écrite
+    # ici : sur une machine anglaise, la version codée en dur faisait échouer la CI.
+    assert application._texte("courriel.expediteur") in libelles
     assert len(libelles) == len(problemes)
 
 

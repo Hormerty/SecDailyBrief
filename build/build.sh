@@ -67,17 +67,17 @@ fi
 # La version annoncee dans le README livre doit etre celle du paquet. On l ecrit dans la copie
 # livree, jamais dans build/README.txt : sed -i sur un fichier versionne salissait l arbre de
 # travail apres chaque build, et le commit suivant embarquait la version de la veille.
-sed "s/^SecDailyBrief .*/SecDailyBrief \/" build/README.txt > "\/SecDailyBrief/README.txt"
+sed "s/^SecDailyBrief .*/SecDailyBrief $version/" build/README.txt > "$sortie/SecDailyBrief/README.txt"
 
 # L archive Linux doit porter ce que le README annonce : la licence MIT, le changelog et un
 # desinstalleur. Les trois manquaient, et l absence de build/uninstall.sh etait masquee par
 # un "|| true".
-cp LICENSE CHANGELOG.md "\/SecDailyBrief/"
+cp LICENSE CHANGELOG.md "$sortie/SecDailyBrief/"
 if [ ! -f build/uninstall.sh ]; then
     echo "build/uninstall.sh absent : l archive n aurait pas de desinstalleur" >&2
     exit 1
 fi
-install -m 755 build/uninstall.sh "\/SecDailyBrief/uninstall.sh"
+install -m 755 build/uninstall.sh "$sortie/SecDailyBrief/uninstall.sh"
 
 archive="$sortie/SecDailyBrief-$version-linux-x86_64.tar.gz"
 tar -C "$sortie" -czf "$archive" SecDailyBrief
