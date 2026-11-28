@@ -109,9 +109,16 @@ def test_un_moteur_sans_verrou_est_refuse(tmp_path, monkeypatch):
 
 def test_une_execution_refuse_un_moteur_non_conforme(tmp_path, monkeypatch):
     import logging
+    import subprocess
 
     from secdailybrief import engine, logging_setup, runner
 
+    def interdit(*args, **kwargs):
+        raise AssertionError("le moteur a été lancé malgré une empreinte non conforme")
+
+    # Sans cet interdit, la preuve inverse lançait un vrai rapport : 4 min 34 de réseau, et le
+    # test passait pour de mauvaises raisons.
+    monkeypatch.setattr(subprocess, "Popen", interdit)
     monkeypatch.setattr(engine, "verifier", lambda: "empreinte differente du verrou")
     monkeypatch.setattr(runner.lock, "instance_unique", _libre)
     monkeypatch.setattr(runner, "reseau_disponible", lambda *a, **k: True)
