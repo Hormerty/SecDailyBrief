@@ -12,6 +12,7 @@ Trois questions qu'aucun test ne pose, et qui ont chacune coûte une version :
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sqlite3
 import sys
@@ -23,7 +24,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from secdailybrief import paths  # noqa: E402
 
-MOTEUR = Path(r"D:\Security Code GitHub\Sec_Daily_report-")
+# Le depot du moteur : voisin de celui de l'application par defaut, ou designe par
+# SECDAILYBRIEF_MOTEUR. Un chemin code en dur faisait de ce sas un outil qui ne tournait que sur
+# le poste de son auteur, donc un sas qui ne gardait rien.
+MOTEUR = Path(os.environ.get("SECDAILYBRIEF_MOTEUR")
+              or Path(__file__).resolve().parent.parent.parent / "Sec_Daily_report-")
 SEUIL_REPETITION = 3
 SEUIL_MORT = 45
 
@@ -70,6 +75,8 @@ def contradictions() -> list[str]:
     if not document.is_file():
         return [f"SOURCES.md introuvable : {document}"]
 
+    if str(MOTEUR) not in sys.path:
+        sys.path.insert(0, str(MOTEUR))
     import veille  # noqa: PLC0415 - le moteur vit dans l'autre depot
 
     texte = document.read_text(encoding="utf-8")
