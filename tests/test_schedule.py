@@ -156,3 +156,19 @@ def test_la_tache_quotidienne_garde_sa_fenetre_de_reprise():
     assert "<CalendarTrigger>" in xml
     assert "<Duration>" in xml                # la fenêtre de reprise de 2 h
     assert "<ScheduleByDay>" in xml           # et le déclenchement quotidien qui la renouvelle
+
+def test_l_heure_du_declencheur_est_celle_de_la_machine():
+    """Le fuseau choisi ne deplace pas le declencheur : il decide de la journee du moteur.
+
+    Windows ne connait que l'heure locale du poste. Ce test fige cette semantique : si un jour
+    l'heure etait convertie depuis le fuseau choisi, il rougirait, et la decision serait alors
+    explicite plutot que silencieuse.
+    """
+    from datetime import datetime
+
+    from secdailybrief import schedule
+
+    xml = schedule.construire_xml(Path("SecDailyBrief.exe"), heure="07:00")
+    attendu = datetime.now().replace(hour=7, minute=0, second=0, microsecond=0)
+
+    assert f"<StartBoundary>{attendu:%Y-%m-%dT%H:%M:%S}</StartBoundary>" in xml

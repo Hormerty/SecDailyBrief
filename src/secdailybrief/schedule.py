@@ -36,6 +36,10 @@ def construire_xml(executable: Path, heure: str = "06:00", arguments: str = "--r
     l'encodage du fichier est refusée par le Planificateur, et c'est exactement l'erreur
     qu'on a eue la première fois.
     """
+    # L'heure est celle de la machine, pas celle du fuseau choisi dans l'assistant : le
+    # planificateur Windows ne connait que l'heure locale du poste. Le fuseau, lui, part au
+    # moteur et decide de ce qu'est « aujourd'hui » (journee, fenetre de 27 h, dates du rapport).
+    # Choisir Asia/Tokyo ne deplace donc pas le declencheur, seulement la journee du moteur.
     debut = debut or datetime.now().replace(hour=int(heure.split(":")[0]),
                                             minute=int(heure.split(":")[1]),
                                             second=0, microsecond=0)
