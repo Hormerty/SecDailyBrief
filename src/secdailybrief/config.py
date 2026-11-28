@@ -179,3 +179,25 @@ def enregistrer_perimetre(dossier: Path, perimetre: dict) -> None:
     """N'écrit que les sections reconnues par le moteur ; une faute ici serait refusée au run."""
     propre = {cle: valeur for cle, valeur in perimetre.items() if cle in SECTIONS_PERIMETRE}
     _ecrire(chemin_perimetre(dossier), propre)
+
+
+def canaux_invalides(actifs: dict[str, bool], valeurs: dict[str, str]) -> str | None:
+    """Ce qui empêcherait un canal de fonctionner : « vide », « url », « jeton » ou None.
+
+    Un webhook et un jeton sont des secrets qu'on ne peut pas deviner : une faute de frappe ne se
+    voit pas, elle se traduit par une alerte qui ne part jamais. Ces quatre cas se refusent au
+    moment de l'enregistrement, pas trois jours plus tard devant un silence.
+    """
+    for nom in ("slack", "discord"):
+        valeur = (valeurs.get(nom) or "").strip()
+        if actifs.get(nom) and not valeur:
+            return "vide"
+        if valeur and not valeur.startswith("https://"):
+            return "url"
+    jeton = (valeurs.get("telegram") or "").strip()
+    if actifs.get("telegram"):
+        if not jeton:
+            return "vide"
+        if ":" not in jeton or len(jeton) < 20:
+            return "jeton"
+    return None

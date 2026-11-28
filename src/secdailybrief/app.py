@@ -131,7 +131,9 @@ class Application:
 
         # Pour les captures d'écran et la documentation : ouvrir directement une page.
         # Sans cette variable, rien ne change pour un utilisateur.
-        page = os.environ.get("SECDailyBrief_PAGE")
+        # SDB_PAGE : les variables du programme sont en majuscules. L ancien nom reste lu,
+        # pour ne pas casser les scripts qui l utilisent deja.
+        page = os.environ.get("SDB_PAGE") or os.environ.get("SECDailyBrief_PAGE")
         if page == "panneau":
             self.afficher_panneau()
         elif page and hasattr(self, f"page_{page}"):
@@ -624,13 +626,13 @@ class Application:
                         variable=self.var_mail).grid(row=1, column=0, columnspan=2, sticky="w")
         ttk.Checkbutton(canaux, text=self._texte("alertes.slack"),
                         variable=self.var_slack_on).grid(row=2, column=0, sticky="w", pady=(6, 0))
-        ttk.Entry(canaux, textvariable=self.var_slack, width=52).grid(
+        ttk.Entry(canaux, textvariable=self.var_slack, width=52, show="•").grid(
             row=2, column=1, sticky="we", pady=(6, 0))
         self._aide_canal(canaux, 2, "slack", self.var_slack, self.var_slack_on,
                          self._texte("alertes.aide.slack"))
         ttk.Checkbutton(canaux, text=self._texte("alertes.discord"),
                         variable=self.var_discord_on).grid(row=3, column=0, sticky="w")
-        ttk.Entry(canaux, textvariable=self.var_discord, width=52).grid(
+        ttk.Entry(canaux, textvariable=self.var_discord, width=52, show="•").grid(
             row=3, column=1, sticky="we")
         self._aide_canal(canaux, 3, "discord", self.var_discord, self.var_discord_on,
                          self._texte("alertes.aide.discord"))
@@ -639,7 +641,7 @@ class Application:
         telegram = ttk.Frame(canaux)
         telegram.grid(row=4, column=1, sticky="we")
         telegram.columnconfigure(0, weight=1)
-        ttk.Entry(telegram, textvariable=self.var_telegram_token, width=34).grid(
+        ttk.Entry(telegram, textvariable=self.var_telegram_token, width=34, show="•").grid(
             row=0, column=0, sticky="we")
         self._aide_canal(canaux, 4, "telegram", self.var_telegram_token,
                          self.var_telegram_on, self._texte("alertes.aide.telegram"),
@@ -721,6 +723,22 @@ class Application:
         self.jetons["telegram_token"] = self.var_telegram_token.get().strip()
         self.jetons["telegram_chat"] = self.var_telegram_chat.get().strip()
 
+    def _canaux_invalides(self) -> str | None:
+        """Le message a afficher si un canal ne peut pas fonctionner, sinon None."""
+        raison = configuration.canaux_invalides(
+            {"slack": self.var_slack_on.get(), "discord": self.var_discord_on.get(),
+             "telegram": self.var_telegram_on.get()},
+            {"slack": self.var_slack.get(), "discord": self.var_discord.get(),
+             "telegram": self.var_telegram_token.get()},
+        )
+        if raison is None:
+            return None
+        canal = "Telegram" if raison == "jeton" else (
+            "Slack" if self.var_slack_on.get() else "Discord")
+        if raison == "vide" and self.var_telegram_on.get() and not self.var_telegram_token.get().strip():
+            canal = "Telegram"
+        return f"{canal} : {self._texte(f'canaux.{raison}')}"
+
     def _precedent_planification(self) -> None:
         self._collecter_canaux()
         self.page_stack()
@@ -741,6 +759,10 @@ class Application:
         if not self.mot_de_passe:
             messagebox.showerror(self._texte("commun.erreur"),
                                  self._texte("courriel.test.echec"))
+            return
+
+        if self._canaux_invalides():
+            messagebox.showerror(self._texte("commun.erreur"), self._canaux_invalides())
             return
 
         configuration.enregistrer(self.dossier, self.brouillon)
@@ -1247,7 +1269,7 @@ class Application:
             import json
 
             # engine.dossier() sait ou PyInstaller a pose les fichiers : dans le binaire
-            # fige, endor/ vit sous _internal/, et non a cote de l'executable. C'est
+            # fige, vendor/ vit sous _internal/, et non a cote de l'executable. C'est
             # pourquoi cette fenetre affichait « Engine: ? » alors que le diagnostic, lui,
             # lisait l'empreinte sans peine.
             verrou = json.loads((engine.dossier() / "engine.json").read_text(encoding="utf-8"))
@@ -1277,8 +1299,13 @@ class Application:
         if not messagebox.askyesno(self._texte("panneau.effacer"),
                                    self._texte("panneau.effacer.confirme")):
             return
+        # Une remise a zero qui laisse l historique, les articles deja vus et les statistiques
+        # n est pas une remise a zero : le programme repartirait en croyant tout connaitre.
         for chemin in (paths.chemin_config(), paths.chemin_secret(),
-                       configuration.chemin_perimetre(self.dossier), paths.chemin_journal()):
+                       configuration.chemin_perimetre(self.dossier), paths.chemin_journal(),
+                       paths.chemin_etat("historique.json"), paths.chemin_etat("seen.json"),
+                       paths.chemin_etat("stats.db"), paths.chemin_etat("alertes_envoyees.json"),
+                       self.dossier / "preview.html", self.dossier / "rapport.html"):
             try:
                 Path(chemin).unlink(missing_ok=True)
             except OSError:

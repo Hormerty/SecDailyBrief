@@ -4,6 +4,17 @@
 
 ### Fixed
 
+- **Five remarks from a Reddit review of `app.py`, all confirmed in the code.** The Slack webhook,
+  the Discord webhook and the Telegram token were plain entries, readable on a shared screen or in
+  a screenshot, while the SMTP password was masked; all four are masked now. A channel switched on
+  with an empty address, a webhook without `https://`, or a Telegram token that does not look like
+  one, is refused at save time instead of failing silently three days later; the rule lives in
+  `config.canaux_invalides` so it can be tested without a window. `SDB_PAGE` replaces
+  `SECDailyBrief_PAGE`, the old name still being read for existing scripts. "Erase my data" now
+  erases what makes a reset a reset: history, seen articles, statistics and the generated reports,
+  which it used to leave behind. And a comment said `endor/` where it meant `vendor/`.
+
+
 - **The history showed every run twice, once finished and once failed.** The journal named the
   cause of the failure: Could not find a suitable TLS CA certificate bundle, six times in two
   days. The engine child process inherited the environment and 
