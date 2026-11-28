@@ -43,7 +43,7 @@ jobs:
         run: |
           powershell -NoProfile -ExecutionPolicy Bypass -File build\build.ps1
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: archives-windows
           path: ${{ runner.temp }}/sortie/dist/*.zip
@@ -82,7 +82,7 @@ jobs:
           SDB_GLIBC_MAX: "2.35"
         run: bash build/build.sh
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: archives-linux
           path: build/dist/*.tar.gz
