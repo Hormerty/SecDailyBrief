@@ -56,6 +56,33 @@ reader: not a linter, a person or an agent who has not written the lines.
 Delegating that read to a fresh agent is worth the two minutes: whoever wrote the line will read
 what they meant, not what is written.
 
+## A test must fail when the intent breaks
+
+A test that asserts the value the code currently produces protects the code, including its defects.
+This one did:
+
+```python
+assert "<Duration>P1D</Duration>" in xml      # it required the bound that killed the task
+```
+
+It stayed green while the Windows alert task stopped after one day. The corrected test asserts the
+property that matters, `assert "<Duration>" not in xml`, and the reason is in its docstring.
+
+So the rule is not "write a test", it is: **break the intent once and watch the test fail**. Revert
+the fix in a scratch copy, run the suite, require a red line. A test that stays green when the
+behaviour it describes is removed is a comment with a syntax.
+
+Two habits follow:
+
+- assert the **property**, not the output. `assert "<Duration>" not in xml` survives a change of
+  interval, version or order; `assert "<Duration>P1D</Duration>" in xml` does not.
+- when a literal is unavoidable, derive it from an exported constant (`schedule.HEURES_ALERTE`)
+  rather than retyping it. A retyped value drifts silently.
+
+`tools/relire_tests.py` lists the assertions that still copy a value or a sentence from the source.
+It is a triage report, not a verdict: an environment variable name, an XML element name or a footer
+belong to the contract and appear on both sides legitimately.
+
 ## The gate
 
 ```powershell
