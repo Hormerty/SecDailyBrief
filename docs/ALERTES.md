@@ -7,8 +7,8 @@ wizard).
 This page explains what to paste in each field. The images below are **illustrations**, not
 screenshots: the menus move between versions, the steps do not.
 
-Where do these addresses go? Not into `config.json`. A webhook URL is a credential — anyone who
-holds it can post to your channel — so it is stored in the encrypted file that also holds your
+Where do these addresses go? Not into `config.json`. A webhook URL is a credential: anyone who
+holds it can post to your channel: so it is stored in the encrypted file that also holds your
 mail password, and it never leaves your machine.
 
 ---
@@ -63,7 +63,7 @@ Telegram needs **two** values, which is why this field has two boxes.
 3. Send your bot a message once, or it cannot write to you: a bot can never start a conversation.
 
 If the token is wrong, Telegram answers `401 Unauthorized`. If the bot is not in the chat, it
-answers `403 Forbidden` — the two errors mean different things.
+answers `403 Forbidden`: the two errors mean different things.
 
 ---
 

@@ -56,7 +56,7 @@ The archive whose name contains "portable" contains a file named "portable.flag"
 it is there, the data lives in a "data" folder next to the executable rather than in your
 Windows profile: the program and your settings travel together on a USB stick.
 
-Deleting "portable.flag" is enough to return to the normal mode — the existing data, however,
+Deleting "portable.flag" is enough to return to the normal mode: the existing data, however,
 stays where it was written.
 
 
@@ -95,6 +95,6 @@ The full log can also be read in the panel, through the "Log" button.
 LICENCE
 -------
 
-MIT — see LICENSE. Software provided without warranty.
+MIT: see LICENSE. Software provided without warranty.
 
 Developed by Hormerty · © 2026

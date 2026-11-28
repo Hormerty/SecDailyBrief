@@ -63,7 +63,7 @@ element, with their commas), and py/incomplete-url-substring-sanitization in a t
 
 ### 2. Credentials in a cloud-synced folder, partly resolved
 
-D:\ is a data drive **synchronised with pCloud** — the first version of this audit called it the
+D:\ is a data drive **synchronised with pCloud**: the first version of this audit called it the
 system drive, which was wrong, and missed the part that matters. The drive's inherited ACL also
 gave Authenticated Users and BUILTIN\Users the right to **modify** whatever it contained.
 
@@ -83,7 +83,7 @@ disk, deliberately, because it is what pushes to GitHub; its ACL names the owner
 outside any synced folder.
 
 Moving a file out of a synced folder does not remove it from pCloud's trash or version history, so
-the regeneration was the fix, not the move — and the old GitHub token is dead, not merely deleted.
+the regeneration was the fix, not the move: and the old GitHub token is dead, not merely deleted.
 
 ### 5. Scheduling failures swallowed, fixed
 
@@ -103,7 +103,7 @@ not, and rendered `href="{escaped}"` for five different lists. Escaping protects
 out of the attribute, not against the scheme itself: a feed announcing
 `javascript:alert(document.domain)` produced a working link in the report, which the application
 opens in the browser ("Ouvrir le dernier rapport"). The origin is `file://`, so the impact is
-limited — but the content came from outside, and the defence existed ten lines away.
+limited: but the content came from outside, and the defence existed ten lines away.
 
 `_lien_html()` now guards every site; a test renders an article whose link is `javascript:` and an
 `also_covered` entry with `data:text/html`, and asserts neither appears.
@@ -150,7 +150,7 @@ escalation. A pipe or a `0600` temporary file would remove the exposure; not don
 
 ## Priority order
 
-1. Finding 2 (move the token and the backup codes off the system drive) — the only high one.
-2. Findings 3 and 4 (Dependabot, CodeQL) — mechanical, and they catch the next two findings.
-3. Findings 9 and 10 — small, and they close the "secrets" chapter.
-4. Findings 7, 11, 12 — naming and housekeeping.
+1. Finding 2 (move the token and the backup codes off the system drive): the only high one.
+2. Findings 3 and 4 (Dependabot, CodeQL): mechanical, and they catch the next two findings.
+3. Findings 9 and 10 , small, and they close the "secrets" chapter.
+4. Findings 7, 11, 12 , naming and housekeeping.

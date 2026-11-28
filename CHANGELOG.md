@@ -4,7 +4,7 @@
 
 Changes accumulate here between two versions. When one is cut, this section becomes the release notes and a new empty one takes its place: nothing gets lost, and nobody has to reconstruct what happened since the last tag.
 
-## 1.7.7 — 27 November 2026
+## 1.7.7 , 27 November 2026
 
 Changes accumulate here between two versions. When one is cut, this section becomes the release
 notes and a new empty one takes its place: nothing gets lost, and nobody has to reconstruct what
@@ -14,7 +14,7 @@ happened since the last tag.
 
 - **The daily report no longer accepts `javascript:` or `data:` links.** The alert renderer
   checked the scheme; the report did not, and rendered hrefs from five lists straight out of feed
-  content. Escaping stops an attribute breakout, not a scheme — and the report opens in the
+  content. Escaping stops an attribute breakout, not a scheme: and the report opens in the
   browser. A crafted feed link now appears as plain text, and a test renders one to prove it.
 - **A scheduling failure is no longer silent.** `_programmer` swallowed both exceptions: the user
   believed the task was installed, the panel said "no run yet", and nothing explained why. The
@@ -30,7 +30,7 @@ happened since the last tag.
   before being reported, advisories keep 14. The line that listed six names for the wrong reason
   now lists only real silence.
 - **The About window spoke English inside the French interface.** Its title and three labels had
-  never been translated, and the title doubles as the panel button — so the bottom bar read
+  never been translated, and the title doubles as the panel button: so the bottom bar read
   `About` next to `Réglages` and `Faire un don`. It now reads `À propos`, `Moteur`, `Licence`,
   `Dépôt`, and a test fails if one of them goes back to the English string.
 
@@ -69,10 +69,10 @@ happened since the last tag.
 - The previous re-pin, `1983983`, carries the report changes above and the
   silent-source and compression fixes (`e4932ae`). It also stops measuring a feed's silence on
   what we keep: CERT-EU, Microsoft Security, Dark Reading, SANS ISC and Unit 42 were reported
-  silent for 33 days while all five had published within 48 hours — their items are filtered out,
+  silent for 33 days while all five had published within 48 hours: their items are filtered out,
   so no row was ever written, so a busy feed looked dead.
 
-## 1.7.6 — 27 November 2026
+## 1.7.6 , 27 November 2026
 
 This release exists because 1.7.5 does not say everything it should. Three defects shared one
 cause: the interface knew a fact and looked for it in the wrong place.
@@ -80,20 +80,20 @@ cause: the interface knew a fact and looked for it in the wrong place.
 ### Fixed
 
 - **"Check for updates" now hands you the checksum.** The dialog said a version was available and
-  offered to open the releases page, leaving the reader to find `SHA256SUMS` alone — the step
+  offered to open the releases page, leaving the reader to find `SHA256SUMS` alone: the step
   everyone skips. The GitHub API publishes a digest per asset, so the dialog now shows the SHA256
   of the archive built for this machine (Windows or Linux, portable or not), in a **selectable
   field**, because a message box cannot be copied from. When no digest is published, it points at
   `SHA256SUMS` instead of showing an empty box.
-- **The About window read `Engine: ?` in every released binary.** It looked for
+- **The About window read `Engine:?` in every released binary.** It looked for
   `vendor/engine.json` next to the executable, while PyInstaller stores it under `_internal/`.
-  `engine.dossier()` knows the difference — the diagnostic used it, the window did not. The line
+  `engine.dossier()` knows the difference: the diagnostic used it, the window did not. The line
   now carries the pinned commit, and **disappears entirely** when the lock is unreadable: a line
   that announces "unknown" is a defect wearing a translation.
 - **The About window pointed at the engine's repository.** `Repository` now opens this one.
 - The French sentence in the update dialog no longer carries an em dash.
 
-## 1.7.5 — 27 November 2026
+## 1.7.5 , 27 November 2026
 
 ### Added
 
@@ -118,7 +118,7 @@ cause: the interface knew a fact and looked for it in the wrong place.
 - The engine is re-pinned to `4e076dd` (238 453 bytes,
   `5f9d18f8f0c014b50406f07de1de161d084f7355e3b2cd5825db34db90705552`).
 
-## 1.7.4 — 27 November 2026
+## 1.7.4 , 27 November 2026
 
 ### Fixed
 
@@ -130,12 +130,12 @@ cause: the interface knew a fact and looked for it in the wrong place.
   13, Ubuntu 22.04 and later, and any distribution with glibc ≥ 2.35.
 - The build script now **measures** the glibc the binary requires and refuses to ship when it
   exceeds the ceiling set by `SDB_GLIBC_MAX` (2.35 in CI). A runner upgrade can no longer
-  reintroduce this in silence — it breaks the build instead of the user's first launch.
+  reintroduce this in silence: it breaks the build instead of the user's first launch.
 
 Reported by CoreInfini7y in [#5](https://github.com/Hormerty/SecDailyBrief/issues/5), with the
 exact traceback and operating system.
 
-### Fixed — navigation
+### Fixed: navigation
 
 - **"Back" no longer leads deeper into the wizard.** Opened from **Settings**, the assistant
   started on the mail page and its "Back" button went up to the consent page, then to the
@@ -146,7 +146,7 @@ exact traceback and operating system.
 - **Going back from the channels page keeps what was typed.** The webhook addresses were re-read
   from the secret file, which had not been written yet, so leaving and returning emptied them.
 
-## 1.7.3 — 26 November 2026
+## 1.7.3 , 26 November 2026
 
 ### Fixed
 
@@ -156,45 +156,45 @@ exact traceback and operating system.
   *unrecognized arguments*. They are now accepted and dispatched to `check_feeds()` or
   `check_links()`. Verified on the rebuilt binary: the check starts and queries the feeds.
 - Those two buttons also demanded an SMTP password before running, although neither sends
-  anything — and a missing password showed a mail error. Only `--run` and `--alerte` ask for it
+  anything: and a missing password showed a mail error. Only `--run` and `--alerte` ask for it
   now; the rule lives in `runner.exige_mot_de_passe` and is tested.
 - Building the environment no longer raises when no configuration exists yet: the sources check
   must be usable on a fresh install.
 
-## 1.7.2 — 26 November 2026
+## 1.7.2 , 26 November 2026
 
 ### Fixed
 
-- The Linux archive weighed twice the Windows one — 30,9 MB against 15,9 MB. The cause was not
+- The Linux archive weighed twice the Windows one: 30,9 MB against 15,9 MB. The cause was not
   the platform: the Python shared library shipped by the CI runner (3.12) is not stripped, and
   carried 28 MB of symbol tables, most of the archive. `build.sh` now passes `--strip`, which
   takes that same library to 6 MB. The frozen binary is still executed after the build, so a
   broken library would be caught before the archive is published.
 
-## 1.7.1 — 26 November 2026
+## 1.7.1 , 26 November 2026
 
 ### Added
 
 - The diagnostic gained an eleventh check on Linux: **does the user systemd manager outlive the
-  session?** A timer for 06:00 is installed, enabled and reported "active" — and never fires,
+  session?** A timer for 06:00 is installed, enabled and reported "active": and never fires,
   because `systemctl --user` stops its manager as soon as no session is open. `Linger=no` is
   silent, so the check says it, with the command that fixes it
   (`loginctl enable-linger <user>`).
 - Inside WSL the check takes another tone: the distribution stops itself when nothing runs, so
   no setting makes scheduling reliable there. WSL is a place to test, not to plan.
 
-## 1.7.0 — 26 November 2026
+## 1.7.0 , 26 November 2026
 
 ### Added
 
-- **Linux**, built and tested on a real Ubuntu 26.04 inside WSL — not merely compiled in CI.
+- **Linux**, built and tested on a real Ubuntu 26.04 inside WSL: not merely compiled in CI.
   The platform layer holds one implementation per system: DPAPI or the desktop keyring for
   secrets, a named mutex or `flock` for the single-instance lock, `%APPDATA%` or XDG for the
   data folder, `schtasks` or systemd timers for the schedule.
 - The scheduler converts the same task XML into systemd units, so the two platforms share one
   description. The conversion knows that the daily task's `Repetition` of `PT15M` is Windows'
   catch-up window, not a quarter-hourly cadence: only a `TimeTrigger` becomes a periodic timer.
-- `build/build.sh`, mirroring `build.ps1` with the same guards — including the refusal to
+- `build/build.sh`, mirroring `build.ps1` with the same guards: including the refusal to
   produce an archive without `cacert.pem`.
 - The release workflow now builds on both systems and publishes four archives with a single
   `SHA256SUMS`.
@@ -210,14 +210,14 @@ exact traceback and operating system.
 All three were found by running the application on Linux, and were invisible to 135 passing
 tests.
 
-## 1.6.0 — 26 November 2026
+## 1.6.0 , 26 November 2026
 
 ### Added
 
 - **Alerts can now reach Slack, Discord or Telegram**, not only the mailbox. Each channel is a
   checkbox of its own, and the wizard grew the fields they need: a webhook URL for Slack and
   Discord, a bot token and a chat id for Telegram.
-- The chat message is short by design — a heading, one line per flaw with its score and source,
+- The chat message is short by design: a heading, one line per flaw with its score and source,
   the link underneath, and how many remain for the next pass. The daily report stays on mail: a
   144 KB digest in a chat window would only be scrolled past.
 - Webhooks travel in the same DPAPI file as the SMTP password, never in `config.json`, because a
@@ -228,9 +228,9 @@ tests.
 - If the mailbox is unchecked while no webhook is configured, the mail takes over again: a lost
   alert is worse than a redundant one.
 - Slack wants `{"text": …}`, Discord wants `{"content": …}`, Telegram wants a token and a chat
-  id — three shapes for one message, each covered by a test.
+  id: three shapes for one message, each covered by a test.
 
-## 1.5.1 — 26 November 2026
+## 1.5.1 , 26 November 2026
 
 ### Changed
 
@@ -238,19 +238,19 @@ tests.
   and about four minutes every three hours, two thirds of it for three hosts (elastic.co
   8,26 MB, MSRC 3,13, a FeedBurner aggregator 2,79) and a hundred blogs.
 - It now reads the national CERT feeds, the three technical bodies without a country, and the
-  services that feed its scoring — **10,94 MB** measured.
+  services that feed its scoring: **10,94 MB** measured.
 - Restricting it to CERTs was not enough: of the eleven report lines naming the author's stack,
   none came from a CERT; they came from Cisco PSIRT and Microsoft MSRC. The alert therefore
-  also keeps the **vendor advisory feeds whose name matches a product in the stack** — PSIRTs,
+  also keeps the **vendor advisory feeds whose name matches a product in the stack**: PSIRTs,
   never blogs. Two feeds for this stack, 3,3 MB, so **14,2 MB** per run: two thirds less than
   before, with the keywords still covered.
 
-## 1.5.0 — 26 November 2026
+## 1.5.0 , 26 November 2026
 
 ### Added
 
 - **Immediate alerts, every three hours.** The engine has carried this mode since the bot's
-  first version — a higher threshold, an eight-hour window, five items per mail, its own state
+  first version: a higher threshold, an eight-hour window, five items per mail, its own state
   file and a first-run seed that avoids a burst of messages. When the watching moved into this
   application, only the daily report was carried over: the alert workflow was left behind, and
   a critical flaw waited for the next morning. A second scheduled task,
@@ -267,26 +267,26 @@ tests.
 
 - `--alerte` called the engine's daily-report function. The engine chooses between the two in
   its own `__main__` block, which the frozen executable never enters, so the choice has to be
-  made by the application — and it was not. The consequence was not cosmetic: testing the mode
+  made by the application: and it was not. The consequence was not cosmetic: testing the mode
   on a fresh data directory **sent a real daily report to the author's mailbox** on 26 November.
   The application now calls `main_alert()` explicitly, and a regression test asserts which
   function each mode reaches.
 
-## 1.4.4 — 26 November 2026
+## 1.4.4 , 26 November 2026
 
 ### Added
 
 - **CISA SSVC decisions** now drive the ranking. The engine used to infer exploitation from
-  wording — "exploitation active", "dans la nature" — and missed any source phrasing it
+  wording ("exploitation active", "dans la nature") and missed any source phrasing it
   differently. CISA Vulnrichment states it per CVE: Exploitation (none / poc / active),
   Automatable, Technical Impact. Entries carrying an `active` decision gain five points and a
   ⚔️ badge, a proof of concept two points and 🧪, automatable and total impact one point each.
   On the first real run: 27 CVEs read, 12 articles raised.
 
 The lookup is bounded to forty CVEs per run, taken from the highest-scoring articles, and
-cached — including "the CISA has not ruled", so a silent CVE is not asked twice.
+cached: including "the CISA has not ruled", so a silent CVE is not asked twice.
 
-## 1.4.3 — 25 November 2026
+## 1.4.3 , 25 November 2026
 
 ### Added
 
@@ -306,7 +306,7 @@ cached — including "the CISA has not ruled", so a silent CVE is not asked twic
 - The ENISA EUVD source pasted its raw exception into the daily error line; it now uses the
   same short reason as every other source.
 
-## 1.4.2 — 25 November 2026
+## 1.4.2 , 25 November 2026
 
 ### Added
 
@@ -314,12 +314,12 @@ cached — including "the CISA has not ruled", so a silent CVE is not asked twic
   identifiers, which makes it the simplest source added so far: no phrase table, no
   translation to keep up.
 
-## 1.4.1 — 25 November 2026
+## 1.4.1 , 25 November 2026
 
 ### Added
 
 - **Nine national CERT feeds** reach the application: Italy, Luxembourg, Austria, Norway,
-  Finland, Hungary, Romania, Slovakia and Spain. Their titles are translated to English —
+  Finland, Hungary, Romania, Slovakia and Spain. Their titles are translated to English:
   eleven phrase tables, plus pattern rewriting where the product sits in the middle of the
   sentence (Hungarian, Romanian, Slovak).
 - The **first `SHA256SUMS` file** is attached by the release workflow: one file, produced from
@@ -328,7 +328,7 @@ cached — including "the CISA has not ruled", so a silent CVE is not asked twic
 ### Changed
 
 - The engine is re-pinned to `92e752d`, which carries the CERT work, the corrected source
-  error messages, and `SOURCES.md` — the inventory of which CERT is covered and why the others
+  error messages, and `SOURCES.md`: the inventory of which CERT is covered and why the others
   are not.
 
 ### Fixed
@@ -336,10 +336,10 @@ cached — including "the CISA has not ruled", so a silent CVE is not asked twic
 - An accented character from the engine lost its accent in the journal (`NVD (�diteurs)`). The
   child's output is decoded as UTF-8, then as the Windows code page when that fails, instead
   of being replaced silently.
-- A source in error now says **why** — "délai dépassé", "injoignable", "HTTP 403" — instead of
+- A source in error now says **why** ("délai dépassé", "injoignable", "HTTP 403") instead of
   pasting a Python exception into the daily mail.
 
-## 1.4.0 — 24 November 2026
+## 1.4.0 , 24 November 2026
 
 ### Added
 
@@ -355,7 +355,7 @@ cached — including "the CISA has not ruled", so a silent CVE is not asked twic
 - The test that checks an unsupported language now uses a code that can never be added
   (`xx-XX`). It had twice failed because it named a real language that later got translated.
 
-## 1.3.0 — 24 November 2026
+## 1.3.0 , 24 November 2026
 
 ### Added
 
@@ -374,7 +374,7 @@ cached — including "the CISA has not ruled", so a silent CVE is not asked twic
   goes through a single helper that polls from the main thread, and the test suite treats
   unhandled thread exceptions as errors.
 
-## 1.2.1 — 24 November 2026
+## 1.2.1 , 24 November 2026
 
 ### Fixed
 
@@ -383,7 +383,7 @@ cached — including "the CISA has not ruled", so a silent CVE is not asked twic
   the copied file back before packaging: a line maintained by hand does not follow the
   version, and this one did not.
 
-## 1.2.0 — 24 November 2026
+## 1.2.0 , 24 November 2026
 
 ### Added
 
@@ -392,14 +392,14 @@ cached — including "the CISA has not ruled", so a silent CVE is not asked twic
   still written in English: only the application is translated.
 - **Saved settings are checked at startup**, like the perimeter file. A `config.json` edited
   by hand used to stay wrong until the next run; it is now named at launch, with an offer to
-  open the page that fixes it. The settings are never reset — that would erase the address.
+  open the page that fixes it. The settings are never reset: that would erase the address.
 
 ### Changed
 
 - The version is checked at build time across the package, the Windows properties and
   `pyproject.toml`, and publishing is done by a workflow rather than from a workstation.
 
-## 1.1.0 — 24 November 2026
+## 1.1.0 , 24 November 2026
 
 ### Added
 
@@ -409,8 +409,8 @@ cached — including "the CISA has not ruled", so a silent CVE is not asked twic
   also deletes the settings.
 - **Seven-day history**, reachable from the panel: date, mode, status and duration of each
   run, without digging through the log.
-- **Strict validation of the perimeter file** at startup. The faulty section is named —
-  unknown section, `stack` as a list, empty keywords — and the example values can be
+- **Strict validation of the perimeter file** at startup. The faulty section is named:
+  unknown section, `stack` as a list, empty keywords: and the example values can be
   restored. The faulty file is kept as `.invalide` rather than destroyed.
 - Run statuses are translated in the status line and in the history.
 
@@ -425,7 +425,7 @@ cached — including "the CISA has not ruled", so a silent CVE is not asked twic
 
 - The consent setting is no longer asked again on every return to the page.
 
-## 1.0.0 — 23 November 2026
+## 1.0.0 , 23 November 2026
 
 First usable version.
 

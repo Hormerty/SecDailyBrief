@@ -7,14 +7,14 @@ the audience is.
 
 | What | Where | Since |
 |---|---|---|
-| awesome-threat-intelligence | [PR #519](https://github.com/hslatman/awesome-threat-intelligence/pull/519) — 2 commits, +8/−0, no conflict | 26 November 2026 |
-| Reddit announcement | not posted yet | — |
+| awesome-threat-intelligence | [PR #519](https://github.com/hslatman/awesome-threat-intelligence/pull/519): 2 commits, +8/−0, no conflict | 26 November 2026 |
+| Reddit announcement | not posted yet |: |
 
 The list merges roughly one pull request per quarter and has 154 open: the PR is likely to sit for
-months. The link from its README only exists once merged — until then, the announcement is what
+months. The link from its README only exists once merged: until then, the announcement is what
 brings visitors.
 
-## Reddit — r/cybersecurity (or r/blueteamsec)
+## Reddit: r/cybersecurity (or r/blueteamsec)
 
 **Title**
 
@@ -29,7 +29,7 @@ Every morning I opened the same twenty tabs: CERT-FR, BSI, the Dutch NCSC, CISA,
 PSIRTs. Half of it never concerned me, and the one advisory that did was buried under yesterday's
 news.
 
-So I built SecDailyBrief. It reads 124 feeds — including 20 national CERTs — ranks what it finds
+So I built SecDailyBrief. It reads 124 feeds (including 20 national CERTs) ranks what it finds
 against the products I actually run, and sends one e-mail at 06:00.
 
 Three things ended up mattering more than I expected:
@@ -48,7 +48,7 @@ the next morning.
 It runs on Windows and Linux, needs no Python, and no account anywhere: it reads public feeds and
 sends you an e-mail. Source (MIT) and a binary in the releases.
 
-Windows will say "Windows protected your PC" — the executable is not code-signed, which is a
+Windows will say "Windows protected your PC": the executable is not code-signed, which is a
 deliberate choice and documented in the archive.
 
 github.com/Hormerty/SecDailyBrief
@@ -56,7 +56,7 @@ github.com/Hormerty/SecDailyBrief
 Happy to answer anything about the feed list, the scoring, or what I refused to include.
 ```
 
-## Hacker News — Show HN
+## Hacker News: Show HN
 
 **Title** (80 characters max)
 
@@ -78,7 +78,7 @@ Two design choices worth mentioning:
 
 - The engine is a separate repository, pinned by commit and SHA-256, and the application never
   modifies it. The checksum is verified before every build and every run.
-- Every source examined and refused is documented with its measurements in SOURCES.md — including
+- Every source examined and refused is documented with its measurements in SOURCES.md: including
   the aggregators I turned down, and why.
 
 Windows and Linux, MIT, no telemetry, no account.
@@ -92,7 +92,7 @@ decisions, and alerts to mail, Slack, Discord or Telegram. Windows and Linux, MI
 github.com/Hormerty/SecDailyBrief
 ```
 
-## Pull request — hslatman/awesome-threat-intelligence
+## Pull request: hslatman/awesome-threat-intelligence
 
 The list uses HTML tables. The row goes in the **Tools** table, alphabetically under **S**.
 
@@ -104,7 +104,7 @@ The list uses HTML tables. The row goes in the **Tools** table, alphabetically u
             <a href="https://github.com/Hormerty/SecDailyBrief" target="_blank">SecDailyBrief</a>
         </td>
         <td>
-            A daily security brief by e-mail: reads 124 public feeds — including 20 national CERTs — translates foreign advisory titles to English, ranks them against the reader's own stack, and enriches the highest-scoring CVEs with CISA's KEV deadline and SSVC decision. Windows and Linux; alerts can also go to Slack, Discord or Telegram.
+            A daily security brief by e-mail: reads 124 public feeds (including 20 national CERTs) translates foreign advisory titles to English, ranks them against the reader's own stack, and enriches the highest-scoring CVEs with CISA's KEV deadline and SSVC decision. Windows and Linux; alerts can also go to Slack, Discord or Telegram.
         </td>
     </tr>
 ```

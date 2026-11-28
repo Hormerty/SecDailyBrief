@@ -184,6 +184,9 @@ handled:
 In the code, every `read_text` / `write_text` carries its encoding, and console output goes
 through `PYTHONIOENCODING=utf-8` whenever it contains anything beyond ASCII.
 
+**No em dash in prose.** A colon, a comma or parentheses say the same thing, survive every editor
+and every mail client, and do not change width from one font to the next.
+
 ## Licence
 
 MIT : see `LICENSE`.
