@@ -1301,19 +1301,27 @@ class Application:
             return
         # Une remise a zero qui laisse l historique, les articles deja vus et les statistiques
         # n est pas une remise a zero : le programme repartirait en croyant tout connaitre.
+        journal = paths.chemin_journal()
+        # Le journal tourne : RotatingFileHandler en garde cinq copies, qui survivaient a
+        # l effacement. Une remise a zero qui laisse 10 Mo de traces n en est pas une.
+        sauvegardes = [journal.with_name(f"{journal.name}.{n}") for n in range(1, 6)]
         for chemin in (paths.chemin_config(), paths.chemin_secret(),
-                       configuration.chemin_perimetre(self.dossier), paths.chemin_journal(),
+                       configuration.chemin_perimetre(self.dossier), journal,
                        paths.chemin_etat("historique.json"), paths.chemin_etat("seen.json"),
                        paths.chemin_etat("stats.db"), paths.chemin_etat("alertes_envoyees.json"),
-                       self.dossier / "preview.html", self.dossier / "rapport.html"):
+                       self.dossier / "preview.html", self.dossier / "rapport.html",
+                       *sauvegardes):
             try:
                 Path(chemin).unlink(missing_ok=True)
             except OSError:
                 pass
-        try:
-            schedule.supprimer()
-        except Exception:                       # noqa: BLE001 - pas de tâche : rien à retirer
-            pass
+        # Les deux taches : la quotidienne et celle des alertes immediates, qui continuait de
+        # tourner toutes les trois heures sur une configuration effacee.
+        for nom in (schedule.NOM_TACHE, schedule.NOM_TACHE_ALERTE):
+            try:
+                schedule.supprimer(nom)
+            except Exception:                   # noqa: BLE001 - pas de tâche : rien à retirer
+                pass
         self.racine.destroy()
 
 

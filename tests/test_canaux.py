@@ -12,8 +12,9 @@ def test_une_adresse_sans_https_est_refusee():
 
     assert config.canaux_invalides({"slack": True},
                                    {"slack": "hooks.slack.com/services/x"}) == "url"
+    # Une adresse en http reste acceptee : un webhook auto-heberge peut l'exiger.
     assert config.canaux_invalides({"discord": True},
-                                   {"discord": "http://discord.com/api/webhooks/1"}) == "url"
+                                   {"discord": "http://discord.com/api/webhooks/1"}) is None
 
 
 def test_un_jeton_telegram_improbable_est_refuse():

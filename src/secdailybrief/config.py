@@ -192,7 +192,11 @@ def canaux_invalides(actifs: dict[str, bool], valeurs: dict[str, str]) -> str | 
         valeur = (valeurs.get(nom) or "").strip()
         if actifs.get(nom) and not valeur:
             return "vide"
-        if valeur and not valeur.startswith("https://"):
+        # On refuse une adresse sans schema, pas une adresse en http : un webhook auto-heberge
+        # (Mattermost, proxy interne) est legitimement en http, et le refuser casserait une
+        # installation qui marche. La regle sert a attraper une faute de frappe, pas a imposer
+        # une politique que le canal distant decide de toute facon.
+        if valeur and not valeur.startswith(("http://", "https://")):
             return "url"
     jeton = (valeurs.get("telegram") or "").strip()
     if actifs.get("telegram"):
