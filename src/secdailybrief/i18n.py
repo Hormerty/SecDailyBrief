@@ -38,6 +38,7 @@ TEXTES: dict[str, dict[str, str]] = {
         "courriel.destinataire": "Adresse de réception",
         "courriel.meme": "Recevoir à la même adresse",
         "courriel.motdepasse": "Mot de passe d'application",
+    "courriel.securite": "Mode de sécurité SMTP",
         "courriel.aide": "Gmail exige un mot de passe d'application, pas votre mot de "
                          "passe habituel. Il n'existe que si la validation en deux étapes "
                          "est activée.",
@@ -165,6 +166,7 @@ TEXTES: dict[str, dict[str, str]] = {
         "courriel.destinataire": "Recipient address",
         "courriel.meme": "Receive at the same address",
         "courriel.motdepasse": "App password",
+    "courriel.securite": "SMTP security mode",
         "courriel.aide": "Gmail requires an app password, not your usual one. It only "
                          "exists if two-step verification is enabled.",
         "courriel.lien": "Create an app password",
@@ -290,6 +292,7 @@ TEXTES: dict[str, dict[str, str]] = {
         "courriel.destinataire": "Ontvangeradres",
         "courriel.meme": "Ontvangen op hetzelfde adres",
         "courriel.motdepasse": "App-wachtwoord",
+    "courriel.securite": "SMTP-beveiligingsmodus",
         "courriel.aide": "Gmail vereist een app-wachtwoord, niet je gewone wachtwoord. Dat "
                          "bestaat alleen als tweestapsverificatie aanstaat.",
         "courriel.lien": "Een app-wachtwoord aanmaken",
@@ -417,6 +420,7 @@ TEXTES: dict[str, dict[str, str]] = {
         "courriel.destinataire": "Empfängeradresse",
         "courriel.meme": "An dieselbe Adresse senden",
         "courriel.motdepasse": "App-Passwort",
+    "courriel.securite": "SMTP-Sicherheitsmodus",
         "courriel.aide": "Gmail verlangt ein App-Passwort, nicht Ihr gewohntes Passwort. Es "
                          "gibt es nur, wenn die Bestätigung in zwei Schritten aktiv ist.",
         "courriel.lien": "App-Passwort erstellen",
@@ -544,6 +548,7 @@ TEXTES: dict[str, dict[str, str]] = {
         "courriel.destinataire": "Dirección de recepción",
         "courriel.meme": "Recibir en la misma dirección",
         "courriel.motdepasse": "Contraseña de aplicación",
+    "courriel.securite": "Modo de seguridad SMTP",
         "courriel.aide": "Gmail exige una contraseña de aplicación, no su contraseña "
                          "habitual. Solo existe si la verificación en dos pasos está activa.",
         "courriel.lien": "Crear una contraseña de aplicación",
@@ -671,6 +676,7 @@ TEXTES: dict[str, dict[str, str]] = {
         "courriel.destinataire": "Indirizzo destinatario",
         "courriel.meme": "Ricevi allo stesso indirizzo",
         "courriel.motdepasse": "Password per le app",
+    "courriel.securite": "Modalità di sicurezza SMTP",
         "courriel.aide": "Gmail richiede una password per le app, non la tua password "
                          "abituale. Esiste solo se la verifica in due passaggi è attiva.",
         "courriel.lien": "Creare una password per le app",
@@ -798,6 +804,7 @@ TEXTES: dict[str, dict[str, str]] = {
         "courriel.destinataire": "Endereço de receção",
         "courriel.meme": "Receber no mesmo endereço",
         "courriel.motdepasse": "Palavra-passe de aplicação",
+    "courriel.securite": "Modo de segurança SMTP",
         "courriel.aide": "O Gmail exige uma palavra-passe de aplicação, não a sua "
                          "palavra-passe habitual. Só existe se a verificação em dois passos "
                          "estiver ativa.",
@@ -926,6 +933,7 @@ TEXTES: dict[str, dict[str, str]] = {
         "courriel.destinataire": "प्राप्तकर्ता पता",
         "courriel.meme": "उसी पते पर प्राप्त करें",
         "courriel.motdepasse": "ऐप पासवर्ड",
+    "courriel.securite": "SMTP सुरक्षा मोड",
         "courriel.aide": "Gmail को ऐप पासवर्ड चाहिए, आपका सामान्य पासवर्ड नहीं। यह तभी बनता "
                          "है जब दो-चरणीय सत्यापन चालू हो।",
         "courriel.lien": "ऐप पासवर्ड बनाएँ",
@@ -1047,6 +1055,7 @@ TEXTES: dict[str, dict[str, str]] = {
         "courriel.destinataire": "收件地址",
         "courriel.meme": "发送到同一地址",
         "courriel.motdepasse": "应用专用密码",
+    "courriel.securite": "SMTP 安全模式",
         "courriel.aide": "Gmail 需要应用专用密码，而不是您的常用密码。只有开启两步验证后"
                          "才会提供。",
         "courriel.lien": "创建应用专用密码",

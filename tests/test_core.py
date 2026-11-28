@@ -187,3 +187,54 @@ def test_sans_trousseau_le_secret_reste_dans_le_fichier(monkeypatch):
     monkeypatch.setattr(linux, "TROUSSEAU_DISPONIBLE", False)
 
     assert linux.chiffrer("mon-secret") == b"mon-secret"
+
+
+# --- Remarques sur config.py -------------------------------------------------------------
+
+def test_une_adresse_sans_domaine_est_refusee():
+    """« @ » et « a@b » passaient : l'adresse est acceptee par SMTP puis rejetee en silence."""
+    from secdailybrief import config
+
+    for adresse in ("@", "a@b", "a@", "sans-arobase", "a b@c.fr"):
+        assert "courriel.expediteur" in config.valider({"email_user": adresse}), adresse
+    for adresse in ("a@b.fr", "prenom.nom@exemple.co.uk"):
+        assert "courriel.expediteur" not in config.valider({"email_user": adresse}), adresse
+
+
+def test_un_mode_smtp_inconnu_n_accuse_pas_le_mot_de_passe():
+    """La regle portait sur smtp_security : le message envoyait corriger un autre champ."""
+    from secdailybrief import config
+
+    problemes = config.valider({"email_user": "a@b.fr", "smtp_security": "aucun"})
+
+    assert "courriel.securite" in problemes
+    assert "courriel.motdepasse" not in problemes
+
+
+def test_une_cle_du_moteur_ne_disparait_pas_a_la_sauvegarde(tmp_path):
+    """charger() la rend, enregistrer() l'effacait : une cle ecrite a la main disparaissait."""
+    from secdailybrief import config
+
+    config.enregistrer(tmp_path, {"email_user": "a@b.fr", "nvd_api_key": "cle-du-moteur"})
+    relu = config.charger(tmp_path)
+
+    assert relu.get("nvd_api_key") == "cle-du-moteur"
+    assert relu.get("email_user") == "a@b.fr"
+
+
+def test_une_ecriture_ratee_ne_laisse_pas_de_provisoire(tmp_path, monkeypatch):
+    import json
+    from pathlib import Path
+
+    from secdailybrief import config
+
+    def refuse(*args, **kwargs):
+        raise OSError("disque plein")
+
+    monkeypatch.setattr(Path, "write_text", refuse)
+
+    with pytest.raises(OSError):
+        config.enregistrer(tmp_path, {"email_user": "a@b.fr"})
+
+    restes = list(tmp_path.glob("*.tmp"))
+    assert not restes, f"provisoire laisse : {restes}"

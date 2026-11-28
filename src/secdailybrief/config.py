@@ -22,6 +22,8 @@ import re
 from pathlib import Path
 
 FUSEAU_PAR_DEFAUT = "Europe/Brussels"
+#: Une adresse doit avoir un domaine et un point : « @ » seul et « a@b » ne recoivent rien.
+ADRESSE_VALIDE = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]{2,}")
 HEURE_VALIDE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 SECURITES_SMTP = ("ssl", "starttls")
 SECTIONS_PERIMETRE = ("countries", "stack", "targets")
@@ -70,8 +72,16 @@ def _ecrire(chemin: Path, donnees: dict) -> None:
     """Écrit par fichier temporaire puis remplace : jamais de configuration à moitié écrite."""
     chemin.parent.mkdir(parents=True, exist_ok=True)
     temporaire = chemin.with_suffix(chemin.suffix + ".tmp")
-    temporaire.write_text(json.dumps(donnees, indent=2, ensure_ascii=False) + "\n",
-                          encoding="utf-8")
+    try:
+        temporaire.write_text(json.dumps(donnees, indent=2, ensure_ascii=False) + "\n",
+                              encoding="utf-8")
+    except OSError:
+        # Disque plein ou dossier en lecture seule : le provisoire ne doit pas rester.
+        try:
+            temporaire.unlink(missing_ok=True)
+        except OSError:                     # noqa: BLE001 - le provisoire est deja un dechet
+            pass
+        raise
     os.replace(temporaire, chemin)
 
 
@@ -82,8 +92,17 @@ def charger(dossier: Path) -> dict:
     return config
 
 
+#: Clés lues par le moteur, rangées dans le magasin chiffré. Elles ne sont donc pas dans
+#: DEFAUTS, mais `charger()` les rend quand elles ont été écrites à la main dans config.json :
+#: les effacer à la première sauvegarde depuis l'interface faisait disparaître une clé sans un mot.
+CLES_MOTEUR = ("nvd_api_key", "ransomware_api_key", "github_token")
+
+
 def enregistrer(dossier: Path, config: dict) -> None:
     reglages = {cle: valeur for cle, valeur in config.items() if cle in DEFAUTS}
+    for cle in CLES_MOTEUR:
+        if config.get(cle):
+            reglages[cle] = config[cle]
     _ecrire(chemin_config(dossier), reglages)
 
 
@@ -91,10 +110,10 @@ def valider(config: dict) -> list[str]:
     """Liste des problèmes, en clair et dans l'ordre de l'écran. Vide = tout va bien."""
     problemes: list[str] = []
     expediteur = (config.get("email_user") or "").strip()
-    if "@" not in expediteur:
+    if not ADRESSE_VALIDE.match(expediteur):
         problemes.append("courriel.expediteur")
     destinataire = (config.get("recipient_email") or "").strip()
-    if destinataire and "@" not in destinataire:
+    if destinataire and not ADRESSE_VALIDE.match(destinataire):
         problemes.append("courriel.destinataire")
     if not HEURE_VALIDE.match((config.get("heure") or "").strip()):
         problemes.append("planif.heure")
@@ -105,7 +124,9 @@ def valider(config: dict) -> list[str]:
     except (TypeError, ValueError):
         problemes.append("planif.fenetre")
     if (config.get("smtp_security") or "").lower() not in SECURITES_SMTP:
-        problemes.append("courriel.motdepasse")
+        # Ce n'est pas le mot de passe qui est en cause : afficher « Mot de passe d'application »
+        # envoyait l'utilisateur corriger un champ qui n'avait rien de faux.
+        problemes.append("courriel.securite")
     if not _fuseau_valide(config.get("timezone")):
         problemes.append("planif.fuseau")
     return problemes
