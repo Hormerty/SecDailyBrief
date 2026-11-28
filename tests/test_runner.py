@@ -7,7 +7,7 @@ import sys
 import pytest
 
 from secdailybrief import config as configuration
-from secdailybrief import lock, logging_setup, runner
+from secdailybrief import historique, lock, logging_setup, runner
 
 # Le verrou est un mutex Windows nommé : si l'application tourne pendant les tests — ce qui
 # arrive quand on la teste justement — tous les cas partent en « deja_en_cours ».
@@ -114,6 +114,9 @@ def test_execution_refusee_si_une_autre_tourne(tmp_path, monkeypatch):
         resultat = runner.executer(CONFIG, "motdepasse", journal, dossier=tmp_path)
 
     assert resultat.statut == "deja_en_cours"
+    # Rien n'a été écrit : l'historique n'a qu'un seul écrivain, et cette écriture est à
+    # l'intérieur du verrou. C'est ce qui rend un verrou de fichier inutile, et ce test le fige.
+    assert historique.charger() == []
 
 
 def test_execution_reportee_sans_reseau(tmp_path, monkeypatch):
