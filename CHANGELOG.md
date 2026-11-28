@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed
+
+- The engine is re-pinned to 7d6bc40, which carries five commits: sources ranked by what they
+  contribute rather than by volume, an honest trend, a dead computation removed, an alert counted
+  only when posted, and an HTTP check on webhook addresses.
+
 ### Fixed
 
 - **A stale keyring entry no longer overrides the secret file** on Linux. The keyring was queried as

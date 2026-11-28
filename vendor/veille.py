@@ -2182,14 +2182,40 @@ def kev_reminders(conn: sqlite3.Connection | None, session: requests.Session, to
     return reminders[:n]
 
 
+SEUIL_COMPARAISON = 21   # jours d'historique necessaires avant d'afficher un ecart
+JOURS_AMORCAGE = 3       # jours ignores au demarrage : la base est vide, tout y est « nouveau »
+
+
+def _mediane(valeurs: list[int]) -> float:
+    """Mediane, pas moyenne : un jour a 375 articles ne doit pas piloter la tendance."""
+    if not valeurs:
+        return 0.0
+    triees = sorted(valeurs)
+    milieu = len(triees) // 2
+    if len(triees) % 2:
+        return float(triees[milieu])
+    return (triees[milieu - 1] + triees[milieu]) / 2
+
+
 def weekly_stats(conn: sqlite3.Connection | None, today: str) -> dict | None:
-    """Les 7 jours précédant ce rapport, comparés aux 7 jours d'avant (le jour courant est exclu)."""
+    """L'activite recente, et un ecart avec le mois precedent seulement s'il veut dire quelque chose.
+
+    Trois precisions qui manquaient :
+
+    - la periode d'amorcage est ignoree. La premiere journee d'une veille qui deduplique compte
+      chaque article comme nouveau, parce que la base est vide, puis plus jamais : le 23 novembre
+      a 375 articles quand les jours suivants en comptent 116 a 290 ;
+    - les totaux sont remplaces par des medianes de la serie quotidienne, un pic isole ne
+      deplace donc plus le chiffre ;
+    - aucun ecart n'est affiche avant SEUIL_COMPARAISON jours d'historique : comparer une semaine
+      a une semaine vide n'est pas une tendance.
+    """
     if conn is None:
         return None
     try:
         now = datetime.fromisoformat(today).date()
         d7 = (now - timedelta(days=7)).isoformat()
-        d14 = (now - timedelta(days=14)).isoformat()
+        d21 = (now - timedelta(days=28)).isoformat()
 
         def window(start: str, end: str) -> dict:
             total, crit, imp = conn.execute(
@@ -2199,31 +2225,99 @@ def weekly_stats(conn: sqlite3.Connection | None, today: str) -> dict | None:
                 "SELECT COUNT(*) FROM cves WHERE vue_le >= ? AND vue_le < ?", (start, end)).fetchone()[0]
             return {"articles": total, "critical": crit, "important": imp, "cves": cves}
 
-        days = conn.execute(
-            "SELECT COUNT(DISTINCT vu_le) FROM articles WHERE vu_le >= ? AND vu_le < ?",
-            (d7, today)).fetchone()[0]
-        if days < 2:  # pas assez d'historique pour une tendance
+        jours = conn.execute(
+            "SELECT vu_le, COUNT(*), COALESCE(SUM(criticite='🔴'),0) FROM articles "
+            "GROUP BY vu_le ORDER BY vu_le").fetchall()
+        if len(jours) < 2:
             return None
-        top = conn.execute(
-            "SELECT source, COUNT(*) AS n FROM articles WHERE vu_le >= ? AND vu_le < ? "
-            "GROUP BY source ORDER BY n DESC, source LIMIT 3", (d7, today)).fetchall()
-        return {"current": window(d7, today), "previous": window(d14, d7), "top": top,
-                "active_days": days}
+
+        # La serie utile : tout sauf les premiers jours, qui ne mesurent que le remplissage.
+        series = [(jour, n, rouges) for jour, n, rouges in jours][JOURS_AMORCAGE:]
+        if not series:
+            return None
+
+        recents = [(jour, n, r) for jour, n, r in series if jour >= d7]
+        anciens = [(jour, n, r) for jour, n, r in series if d21 <= jour < d7]
+        if not recents:
+            return None
+
+        jours_actifs = len(series)
+        comparable = jours_actifs >= SEUIL_COMPARAISON and len(anciens) >= 7
+
+        total_recent = sum(n for _, n, _ in recents)
+        rouges_recent = sum(r for _, _, r in recents)
+        stats = {
+            "current": window(d7, today),
+            "jours_actifs": jours_actifs,
+            "age_jours": (now - datetime.fromisoformat(str(jours[0][0])[:10]).date()).days,
+            "mediane_recente": _mediane([n for _, n, _ in recents]),
+            "part_rouges": (rouges_recent / total_recent) if total_recent else 0.0,
+            "comparable": comparable,
+            "top": conn.execute(
+                "SELECT source, COUNT(*) AS n FROM articles WHERE vu_le >= ? AND vu_le < ? "
+                "GROUP BY source ORDER BY n DESC, source LIMIT 3", (d7, today)).fetchall(),
+            # Le volume et la valeur sont deux choses : Sploitus et BSI remplissent le rapport,
+            # Zero Day Initiative, GitHub Advisory et le KEV fournissent l'essentiel des rouges.
+            "cruciales": conn.execute(
+                "SELECT source, COUNT(*) AS n FROM articles WHERE vu_le >= ? AND vu_le < ? "
+                "AND score >= ? GROUP BY source ORDER BY n DESC, source LIMIT 3",
+                (d7, today, CRITICAL_THRESHOLD)).fetchall(),
+        }
+        if comparable:
+            total_ancien = sum(n for _, n, _ in anciens)
+            rouges_ancien = sum(r for _, _, r in anciens)
+            stats["mediane_ancienne"] = _mediane([n for _, n, _ in anciens])
+            stats["part_rouges_ancienne"] = (rouges_ancien / total_ancien) if total_ancien else 0.0
+        return stats
     except (sqlite3.Error, ValueError) as exc:
         log.warning("Statistics unavailable: %s", exc)
         return None
 
 
 def trend_line(stats: dict) -> str:
-    current, previous = stats["current"], stats["previous"]
+    """Le niveau, et un ecart seulement s'il repose sur assez d'historique."""
+    current = stats["current"]
+    prefixe = (f"{current['articles']} items · 🔴 {current['critical']} · "
+               f"🟠 {current['important']} · {current['cves']} new CVE")
+
+    mediane = stats.get("mediane_recente") or 0
+    if not stats.get("comparable"):
+        # Un programme jeune doit dire sa jeunesse plutot que d'inventer une tendance.
+        return (f"{prefixe} · {mediane:.0f} items/day (median) · "
+                f"{stats.get('age_jours', stats['jours_actifs']) + 1} days of history, "
+                f"no comparison yet")
+
     evolution = ""
-    if previous["articles"] > 0:
-        delta = (current["articles"] - previous["articles"]) / previous["articles"] * 100
-        evolution = f" ({delta:+.0f} % vs previous week)"
-    top = ", ".join(f"{s} ({n})" for s, n in stats["top"])
-    return (f"{current['articles']} items{evolution} · 🔴 {current['critical']} · "
-            f"🟠 {current['important']} · {current['cves']} new CVE · "
-            f"most active sources: {top}")
+    ancienne = stats.get("mediane_ancienne") or 0
+    if ancienne:
+        evolution = f" ({(mediane - ancienne) / ancienne * 100:+.0f} % vs previous 3 weeks)"
+    part = stats.get("part_rouges") or 0
+    part_avant = stats.get("part_rouges_ancienne") or 0
+    composition = f" · 🔴 {100 * part:.0f} % of items"
+    # Un ecart en points n'a pas besoin de denominateur : une base sans aucun rouge reste
+    # une base, et passer de 0 % a 30 % est une information.
+    if "part_rouges_ancienne" in stats:
+        composition += f" ({100 * (part - part_avant):+.0f} points)"
+    return f"{prefixe} · {mediane:.0f} items/day (median){evolution}{composition}"
+
+
+def sources_line(stats: dict) -> str:
+    """Qui fournit les alertes, et qui remplit le reste : deux lignes, pas une.
+
+    Une seule ligne « most active sources » designait Sploitus, BSI et The Register, c'est-a-dire
+    les plus bavards, en laissant croire que c'etaient les plus utiles. Zero Day Initiative,
+    GitHub Advisory et CISA KEV, qui portent la moitie des rouges, n'y apparaissaient jamais.
+    """
+    from html import escape as _echapper
+
+    cruciales = ", ".join(f"{_echapper(s)} ({n})" for s, n in stats.get("cruciales") or [])
+    prolifiques = ", ".join(f"{_echapper(s)} ({n})" for s, n in stats.get("top") or [])
+    morceaux = []
+    if cruciales:
+        morceaux.append(f"Most critical sources: {cruciales}")
+    if prolifiques:
+        morceaux.append(f"Most prolific: {prolifiques}")
+    return " · ".join(morceaux)
 
 
 # --- Collecte ----------------------------------------------------------------
@@ -2559,7 +2653,6 @@ def collect_rss(session: requests.Session, source: dict, since: datetime,
             if langue in ("ja", "zh", "ko", "ru", "el", "ar", "he"):
                 LANGUES_ECARTEES[source["name"]] = LANGUES_ECARTEES.get(source["name"], 0) + 1
                 continue
-        text = _entry_text(entry)
         # Le titre decide de l'admission ; le resume informe le score. Juger sur le resume
         # laissait passer un article sur macOS parce qu'il contenait le mot « securite ».
         if filtered and not source.get("require_any") and not is_relevant(title):
@@ -4223,6 +4316,7 @@ def render_html(groups: dict[str, list[Article]], errors: list[str],
         parts.append(
             '<h2 style="color:#222;border-bottom:1px solid #ccc;margin-top:28px">📈 Trend</h2>'
             f'<p style="font-size:13px">Previous 7 days: {e(trend_line(stats))}</p>'
+        f'<p style="font-size:12px;color:#666">{e(sources_line(stats))}</p>'
         )
     parts.append(
         '<div style="margin-top:26px;padding:12px;background:#f8f9fa;'
@@ -4352,7 +4446,8 @@ def render_text(groups: dict[str, list[Article]], errors: list[str],
         lines.append(f"\n##### EXPLOITED BY VENDOR ({VENDORS_DAYS} D, KEV — NOT ATTACK COUNTS) #####")
         lines.append(" · ".join(_vendor_line(f) for f in vendors))
     if stats:
-        lines.append("\n##### TREND (previous 7 days) #####\n" + trend_line(stats))
+        lines.append("\n##### TREND (previous 7 days) #####\n" + trend_line(stats)
+                     + "\n" + sources_line(stats))
     lines.append("\n" + "-" * 58)
     lines.append("Generated automatically by Nours_sec_bot")
     return "\n".join(lines)
@@ -4968,17 +5063,31 @@ def poster_alertes(texte: str) -> int:
     for cible in cibles:
         genre = str(cible.get("type") or "").lower()
         try:
+            # Un webhook vient du fichier local, mais un schema exotique (file:, ftp:)
+            # produirait une erreur obscure a l'envoi : on refuse ce qui ne parle pas HTTP.
+            if genre in ("slack", "discord") and cible.get("url"):
+                if not str(cible["url"]).lower().startswith(("http://", "https://")):
+                    log.warning("Canal %s : adresse non HTTP, ignore", genre)
+                    continue
             if genre == "slack" and cible.get("url"):
-                requests.post(cible["url"], json={"text": texte}, timeout=15)
+                reponse = requests.post(cible["url"], json={"text": texte}, timeout=15)
             elif genre == "discord" and cible.get("url"):
-                requests.post(cible["url"], json={"content": texte[:1900]}, timeout=15)
+                reponse = requests.post(cible["url"], json={"content": texte[:1900]}, timeout=15)
             elif genre == "telegram" and cible.get("token") and cible.get("chat"):
-                requests.post(
+                reponse = requests.post(
                     f"https://api.telegram.org/bot{cible['token']}/sendMessage",
                     json={"chat_id": str(cible["chat"]), "text": texte[:4000]},
                     timeout=15)
             else:
                 log.warning("Canal %s incomplet : ignore", genre or "?")
+                continue
+            # Un 404, un 500 ou un webhook revoque produisait la meme ligne qu'un succes :
+            # « Alerte publiee » alors que rien n'etait parti. Pour un canal d'alerte, c'est
+            # le pire des messages.
+            try:
+                reponse.raise_for_status()
+            except requests.HTTPError:
+                log.warning("Alerte %s refusee : HTTP %s", genre, reponse.status_code)
                 continue
             publies += 1
             log.info("Alerte publiee sur %s", genre)
