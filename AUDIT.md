@@ -115,6 +115,18 @@ URLs and the Telegram token), `NVD_API_KEY`, `RANSOMWARE_API_KEY` and `GITHUB_TO
 process through its environment. On Linux, `/proc/<pid>/environ` is readable by the same user
 while the run lasts; on Windows, another process of the same user can read the block.
 
+Since 28 November 2026, three of the remarks that came with this entry are addressed, and the
+injection itself is documented rather than fixed:
+
+- `NVD_API_KEY`, `RANSOMWARE_API_KEY` and `GITHUB_TOKEN` are read from the encrypted store first.
+  The old `config.json` location is still honoured, with a warning naming the key: it was the only
+  way to set them, since the window has no field for them, and it left a token in clear on disk.
+- inherited variables are stripped before the block is built, so a stray `GITHUB_TOKEN` in the
+  host environment no longer reaches the engine when the configuration holds none.
+- what remains is the injection itself. Closing it means the engine reads its secrets from a
+  temporary file with mode `0600`, or from standard input, instead of its environment. That is an
+  engine change, not an application one, and it is not done yet.
+
 Severity is low because that attacker already has the encrypted secret file *and* the DPAPI or
 keyring material to open it. It matters for crash dumps and process monitors, not for privilege
 escalation. A pipe or a `0600` temporary file would remove the exposure; not done.
