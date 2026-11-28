@@ -106,9 +106,22 @@ def supprimer(nom: str) -> None:
 
 
 def prochaine_execution(nom: str) -> str | None:
+    """L'heure de la prochaine execution, ou None.
+
+    systemd repond en microsecondes depuis l'epoque (NextElapseUSecRealtime). L'interface en
+    affichait donc un entier de seize chiffres ; on le convertit ici, une fois.
+    """
     resultat = _systemctl("show", f"{nom}.timer", "-p", "NextElapseUSecRealtime", "--value")
     valeur = (resultat.stdout or "").strip()
-    return valeur or None
+    if not valeur:
+        return None
+    try:
+        secondes = int(valeur) / 1_000_000
+    except ValueError:
+        return valeur                       # deja une date lisible, on la garde
+    from datetime import datetime
+
+    return datetime.fromtimestamp(secondes).isoformat(timespec="seconds")
 
 
 def est_systemd() -> bool:

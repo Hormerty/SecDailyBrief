@@ -111,3 +111,18 @@ def test_le_paquet_de_certificats_est_pose_dans_l_environnement(tmp_path):
     assert env["REQUESTS_CA_BUNDLE"] == env["SSL_CERT_FILE"]
     assert env["REQUESTS_CA_BUNDLE"].endswith("cacert.pem")
     assert "WEBHOOKS" not in env
+
+# --- A15, A20 : historique borné, en-têtes du message de test -------------------------
+
+def test_l_historique_couvre_une_semaine_meme_avec_les_alertes(isole_donnees):
+    """Neuf passages par jour (le rapport plus huit alertes) font 63 entrées : 60 en tronquait une."""
+    from datetime import datetime, timedelta
+
+    from secdailybrief import historique
+
+    depart = datetime.now() - timedelta(days=7)
+    for indice in range(7 * 9):
+        historique.enregistrer("ok", 1.0, "run", maintenant=depart + timedelta(hours=indice))
+
+    assert len(historique.charger()) == 63          # rien n'a été perdu
+    assert historique.MAX_ENTREES >= 7 * 9

@@ -64,12 +64,14 @@ def chiffrer(texte: str) -> bytes:
 
 
 def dechiffrer(chiffre: bytes) -> str:
-    if chiffre == b"secret-service" or TROUSSEAU_DISPONIBLE:
+    # Le trousseau n'est consulte que s'il est le depositaire, c'est-a-dire si le fichier ne
+    # contient que le marqueur. Le consulter des que secret-tool existe laissait une entree
+    # perimee l'emporter sur le contenu du fichier : mot de passe SMTP refuse sans explication.
+    if chiffre == b"secret-service":
         resultat = _secret_tool("lookup", *_cle())
         if resultat.returncode == 0 and resultat.stdout:
             return resultat.stdout.decode("utf-8")
-        if chiffre == b"secret-service":
-            raise OSError("secret absent du trousseau (session verrouillee ?)")
+        raise OSError("secret absent du trousseau (session verrouillee ?)")
     return chiffre.decode("utf-8")
 
 
@@ -81,8 +83,17 @@ def verrou_instance(nom: str = "SecDailyBrief"):
     dans le dossier temporaire de l'utilisateur.
     """
     propre = nom.replace("\\", "_").replace("/", "_").strip("_") or "SecDailyBrief"
-    chemin = Path(tempfile.gettempdir()) / f".{propre}.lock"
-    descripteur = os.open(chemin, os.O_CREAT | os.O_RDWR, 0o600)
+    # Un verrou partage dans /tmp : le second utilisateur ne peut pas ouvrir le fichier 0600 du
+    # premier (PermissionError non rattrapee au demarrage), et les deux se disputent le meme
+    # verrou. On le range donc dans un dossier propre a l'utilisateur.
+    dossier = os.environ.get("XDG_RUNTIME_DIR") or tempfile.gettempdir()
+    propre_dossier = Path(dossier) / f"sdb-{os.getuid()}"
+    propre_dossier.mkdir(mode=0o700, parents=True, exist_ok=True)
+    chemin = propre_dossier / f".{propre}.lock"
+    drapeaux = os.O_CREAT | os.O_RDWR
+    if hasattr(os, "O_NOFOLLOW"):
+        drapeaux |= os.O_NOFOLLOW          # un lien symbolique ne detourne pas le verrou
+    descripteur = os.open(chemin, drapeaux, 0o600)
     try:
         try:
             fcntl.flock(descripteur, fcntl.LOCK_EX | fcntl.LOCK_NB)

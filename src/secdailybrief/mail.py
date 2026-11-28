@@ -60,6 +60,11 @@ def tester_envoi(config: dict, mot_de_passe: str) -> None:
     destinataire = (config.get("recipient_email") or expediteur).strip()
     if not expediteur or not destinataire:
         raise ValueError("adresse d'envoi ou de réception manquante")
+    # Les en-têtes sont assemblés à la main : une adresse contenant un retour à la ligne
+    # injecterait un en-tête (Bcc, Subject). Le moteur refuse déjà ce cas de son côté.
+    for adresse in (expediteur, destinataire):
+        if "\r" in adresse or "\n" in adresse:
+            raise ValueError("adresse contenant un retour à la ligne")
 
     message = ("From: {expediteur}\r\nTo: {destinataire}\r\nSubject: {sujet}\r\n"
                "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n{corps}"

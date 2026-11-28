@@ -14,7 +14,9 @@ from pathlib import Path
 from . import paths
 
 NOM = "historique.json"
-MAX_ENTREES = 60
+#: Sept jours à neuf passages quotidiens (le rapport et huit alertes) font 63 entrées : la borne
+#: précédente, 60, en tronquait une, donc la fenêtre de sept jours affichait six jours et demi.
+MAX_ENTREES = 200
 JOURS_AFFICHES = 7
 
 

@@ -76,8 +76,11 @@ which can take days.
 To try it now, from a terminal, with the engine at hand:
 
 ```bash
-SLACK_WEBHOOK="https://hooks.slack.com/services/…" python veille.py --alerte
+WEBHOOKS='[{"type":"slack","url":"https://hooks.slack.com/services/…"}]' python veille.py --alerte
 ```
+
+The engine reads one variable, `WEBHOOKS`, holding a JSON list of channels: Slack and Discord expect
+a `url`, Telegram a `token` and a `chat`. A bare `SLACK_WEBHOOK` no longer means anything.
 
 The engine sends whatever it considers a major flaw; if nothing has changed since the last sweep,
 it says so and sends nothing. That is the normal behaviour, not a failure.

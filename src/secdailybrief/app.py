@@ -1092,7 +1092,12 @@ class Application:
 
         def verifier() -> None:
             if not etat["fait"]:
-                self.racine.after(delai, verifier)
+                try:
+                    self.racine.after(delai, verifier)
+                except tk.TclError:
+                    # La fenetre a ete fermee pendant l'execution : le rappel n'a plus de
+                    # destinataire, et Tcl le dit dans la console au lieu de se taire.
+                    return
                 return
             if etat["erreur"] is not None:
                 self._signaler_erreur_travail(etat["erreur"])

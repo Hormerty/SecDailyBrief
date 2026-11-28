@@ -279,3 +279,16 @@ def test_un_perimetre_illisible_donne_un_dictionnaire_vide(tmp_path):
     (tmp_path / "perimetre.json").write_text("{ invalide", encoding="utf-8")
 
     assert app.perimetre_sur(tmp_path) == {}
+
+def test_un_message_de_test_refuse_un_retour_a_la_ligne():
+    """Les en-têtes sont assemblés à la main : une adresse avec \\r\\n injecte un en-tête."""
+    from secdailybrief import mail
+
+    for adresse in ("a@b.fr\r\nBcc: pirate@exemple.fr", "a@b.fr\nBcc: x@y.z"):
+        try:
+            mail.tester_envoi({"email_user": adresse}, "motdepasse")
+        except ValueError:
+            continue
+        except Exception:                          # noqa: BLE001 - reseau absent : on ne teste pas SMTP
+            continue
+        raise AssertionError(f"adresse acceptée : {adresse!r}")

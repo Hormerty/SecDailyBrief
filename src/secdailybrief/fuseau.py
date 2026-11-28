@@ -15,6 +15,7 @@ Time ») sont fonctionnellement équivalents : même décalage, mêmes changemen
 """
 from __future__ import annotations
 
+import os
 import sys
 
 FUSEAU_PAR_DEFAUT = "Europe/Brussels"
@@ -88,8 +89,28 @@ def _existe(zone: str) -> bool:
 
 
 def zone_iana(defaut: str = FUSEAU_PAR_DEFAUT) -> str:
-    """Zone IANA de cette machine, ou le défaut si elle n'est pas dans la table."""
+    """Zone IANA de cette machine, ou le défaut si elle est introuvable.
+
+    Hors Windows, `nom_windows()` ne rend rien : l'assistant proposait donc toujours le fuseau
+    par défaut, faux pour tout utilisateur hors Europe de l'Ouest. On lit la variable TZ, puis le
+    lien /etc/localtime, avant de se rabattre sur le défaut.
+    """
     zone = CORRESPONDANCES.get(nom_windows() or "")
     if zone and _existe(zone):
         return zone
+    for candidate in (os.environ.get("TZ"), _zone_du_lien_localtime()):
+        if candidate and _existe(candidate):
+            return candidate
     return defaut
+
+
+def _zone_du_lien_localtime() -> str | None:
+    """« Europe/Brussels » lu dans /etc/localtime, ou None."""
+    try:
+        cible = os.readlink("/etc/localtime")
+    except OSError:
+        return None
+    marqueur = "zoneinfo/"
+    if marqueur in cible:
+        return cible.split(marqueur, 1)[1]
+    return None

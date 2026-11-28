@@ -4,6 +4,32 @@
 
 ### Fixed
 
+- **A stale keyring entry no longer overrides the secret file** on Linux. The keyring was queried as
+  soon as `secret-tool` existed, even when the file held clear text, so an old entry won and the SMTP
+  password was refused without explanation. It is consulted only when the file holds the
+  `secret-service` marker, which is what designates it.
+- **The Linux instance lock is per user.** It lived in the shared temporary directory with mode
+  `0600`: a second account could not open it, an uncaught `PermissionError` at startup, and both
+  contended for the same lock. It now sits in `XDG_RUNTIME_DIR` or a `sdb-<uid>` folder, opened with
+  `O_NOFOLLOW`.
+- **"Next run" showed sixteen digits on Linux.** systemd answers in microseconds; the value is
+  converted once, in the planner, instead of being printed raw.
+- **The time zone was only detected on Windows.** `zone_iana()` returned the default everywhere
+  else, so the assistant proposed Brussels to any user outside Western Europe. `TZ` and the
+  `/etc/localtime` link are read first.
+- **The history held six days and a half.** A 60-entry bound for a seven-day window, while the report
+  plus eight alerts write nine entries a day. The bound is 200.
+- **A newline in an address could inject a mail header.** The test message is assembled by hand and
+  accepted it in the sender or recipient, where the engine refuses it. Both are refused now.
+- **A callback could fire after the window closed**, printing a `TclError` in a console nobody reads.
+- **The Linux archive carried neither the MIT licence nor the changelog**, and no uninstaller: the
+  copy of a `build/uninstall.sh` that did not exist was hidden by `|| true`. It now gets `LICENSE`,
+  `CHANGELOG.md` and a real `uninstall.sh`, and the build refuses to continue without it.
+- **The build rewrote a tracked file.** `sed -i` on `build/README.txt` dirtied the working tree after
+  every build, and the next commit carried the previous version. The versioned copy is generated.
+- **`docs/ALERTES.md` documented a command that no longer works**: `SLACK_WEBHOOK=… python
+  veille.py --alerte` sends nothing, since the engine reads `WEBHOOKS` as a JSON list.
+
 - **A corrupted state file no longer closes the door.** config.json truncated, secret.dpapi
   copied from another machine or written by another account, perimetre.json invalid: three
   ValueError, inascii.Error or OSError raised while the window was still being built, so the
