@@ -429,6 +429,11 @@ class Application:
         return True
 
     def _tester_envoi(self) -> None:
+        """Teste le courriel hors du fil de l'interface : vingt secondes sans fenêtre, c'est une
+        application qui paraît plantée. Windows la titre « Ne répond pas » au bout de cinq.
+
+        Le résultat revient par `suite`, donc dans le fil UI : rien de Tk n'est touché ailleurs.
+        """
         self._synchroniser_adresses()
         if not self._collecter_courriel():
             return
@@ -436,15 +441,25 @@ class Application:
         if not mot_de_passe:
             self.var_test.set(self._texte("courriel.test.echec"))
             return
-        self.var_test.set("…")
-        self.racine.update_idletasks()
-        try:
-            mail.tester_envoi(self.brouillon, mot_de_passe)
-        except Exception:                       # noqa: BLE001 - tout échec se dit à l'écran
-            self.var_test.set(self._texte("courriel.test.echec"))
-            return
-        self.mot_de_passe = mot_de_passe
-        self.var_test.set(self._texte("courriel.test.ok"))
+        if getattr(self, "_test_en_cours", False):
+            return                      # deux clics ne lancent pas deux connexions SMTP
+        self._test_en_cours = True
+        self.var_test.set(self._texte("courriel.test.encours"))
+
+        def travail():
+            try:
+                mail.tester_envoi(self.brouillon, mot_de_passe)
+                return True
+            except Exception:           # noqa: BLE001 - l'échec est un résultat, pas une panne
+                return False
+
+        def suite(reussi) -> None:
+            self._test_en_cours = False
+            if reussi:
+                self.mot_de_passe = mot_de_passe
+            self.var_test.set(self._texte("courriel.test.ok" if reussi else "courriel.test.echec"))
+
+        self._en_arriere_plan(travail, suite)
 
     def page_stack(self) -> None:
         page = self._vider()

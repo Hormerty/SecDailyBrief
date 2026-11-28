@@ -548,7 +548,9 @@ def test_une_erreur_du_fil_de_travail_debloque_la_fenetre(application, monkeypat
     vues = []
     monkeypatch.setattr(application, "_signaler_erreur_travail", vues.append)
     suite_appelee = []
-    application.racine.after = lambda delai, rappel: rappel()   # pas d'attente réelle
+    # monkeypatch, et non affectation directe : sinon la racine reste modifiee pour
+    # tous les tests suivants, et leurs rappels after() deviennent recursifs.
+    monkeypatch.setattr(application.racine, "after", lambda delai, rappel: rappel())
 
     def travail():
         raise RuntimeError("panne simulee")
@@ -593,3 +595,69 @@ def test_les_phrases_du_perimetre_traversent_sans_etre_traduites(application):
     phrase = "le fichier doit contenir un objet JSON"
 
     assert application._libelles([phrase]) == [phrase]
+
+
+def test_le_test_d_envoi_ne_bloque_pas_le_fil_de_l_interface(application, monkeypatch):
+    """Vingt secondes sans fenêtre, c'est Windows qui écrit « Ne répond pas » au bout de cinq."""
+    from secdailybrief import app, mail
+
+    application.page_courriel()          # la page construit var_mot_de_passe
+    application.var_mot_de_passe.set("motdepasse")
+    application._collecter_courriel = lambda: True
+    application._synchroniser_adresses = lambda: None
+    ordre = []
+
+    def lent(config, mot_de_passe):
+        ordre.append("debut")
+        import time
+
+        time.sleep(0.3)                     # simule la connexion SMTP
+        ordre.append("fin")
+
+    monkeypatch.setattr(mail, "tester_envoi", lent)
+
+    application._tester_envoi()
+
+    # Le libellé « en cours » est posé avant l'appel, et le fil UI a déjà rendu la main.
+    assert application.var_test.get() in (
+        application._texte("courriel.test.encours"),
+        application._texte("courriel.test.ok"),
+    )
+
+    for _ in range(200):
+        application.racine.update()      # laisse Tk executer les rappels after()
+        if application.var_test.get() == application._texte("courriel.test.ok"):
+            break
+        import time
+
+        time.sleep(0.01)
+
+    assert ordre == ["debut", "fin"]
+    assert application.var_test.get() == application._texte("courriel.test.ok")
+    assert application.mot_de_passe == "motdepasse"
+
+
+def test_un_test_d_envoi_rate_affiche_l_echec(application, monkeypatch):
+    from secdailybrief import mail
+
+    application.page_courriel()          # la page construit var_mot_de_passe
+    application.var_mot_de_passe.set("motdepasse")
+    application._collecter_courriel = lambda: True
+    application._synchroniser_adresses = lambda: None
+
+    def echoue(config, mot_de_passe):
+        raise OSError("SMTP refuse")
+
+    monkeypatch.setattr(mail, "tester_envoi", echoue)
+
+    application._tester_envoi()
+
+    import time
+
+    for _ in range(200):
+        application.racine.update()
+        if application.var_test.get() == application._texte("courriel.test.echec"):
+            break
+        time.sleep(0.01)
+
+    assert application.var_test.get() == application._texte("courriel.test.echec")
