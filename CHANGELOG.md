@@ -14,6 +14,9 @@ equests did not always find its
     diagnostic already validates, and warns when it is absent;
   - two runs written in the same second with the same mode are merged, the worst status winning:
     they come from one launch seen by two processes;
+  - the duplicates were not two processes at all: a test that walked through main() wrote into
+    the real journal and the real history, because no conftest.py isolated the data directory.
+    One now does, for every test: after a full suite, both files are byte-for-byte unchanged;
   - history entries carry their **origin** (interface, planificateur, ligne de commande),
     shown as a fifth column. The scheduled task now passes --planifie, so an automatic send can
     be told apart from a manual one. Without it, the duplicate was impossible to attribute.
