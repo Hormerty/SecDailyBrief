@@ -188,6 +188,31 @@ def test_pendant_un_lancement_les_boutons_sont_desactives(application, monkeypat
     assert all(bouton.instate(["!disabled"]) for bouton in application.boutons_action)
 
 
+def test_le_panneau_transmet_les_jetons_au_moteur(application, monkeypatch):
+    """Sans eux, canaux_alerte() recoit {} et WEBHOOKS n'est jamais pose : canaux muets."""
+    import time as _time
+
+    vus = {}
+
+    def note(*arguments, **options):
+        vus.update(options)
+        return app.runner.Resultat("ok", 0, 0.1, [])
+
+    monkeypatch.setattr(app.runner, "executer", note)
+    application.afficher_panneau()
+    application.mot_de_passe = "motdepasse"
+    application.jetons = {"slack_webhook": "https://hooks.slack.com/x"}
+
+    application._lancer("preview")
+
+    for _ in range(100):
+        if vus:
+            break
+        _time.sleep(0.02)
+
+    assert vus.get("jetons", {}).get("slack_webhook") == "https://hooks.slack.com/x"
+
+
 def test_la_tache_planifiee_lance_l_application_pas_le_moteur(application, monkeypatch):
     """`--moteur` court-circuite pré-vol, verrou, journal et dossier de travail : la tâche
     doit appeler `--run`. La première tâche créée appelait `--moteur`."""
