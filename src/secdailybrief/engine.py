@@ -38,6 +38,30 @@ def module(dossier_donnees: Path | None = None):
     return _module
 
 
+def verifier() -> str | None:
+    """None si veille.py correspond au verrou, sinon la raison de la divergence.
+
+    Le diagnostic le faisait déjà, mais aucun chemin d'exécution ne le refaisait : un fichier
+    modifié sur disque était lancé sans contrôle, alors que l'application annonce l'avoir épinglé.
+    Le coût est un SHA-256 de 248 Ko, une fois par processus.
+    """
+    import hashlib
+    import json
+
+    fichier = dossier() / "veille.py"
+    verrou = dossier() / "engine.json"
+    if not fichier.is_file() or not verrou.is_file():
+        return "veille.py ou engine.json introuvable"
+    try:
+        attendu = json.loads(verrou.read_text(encoding="utf-8"))
+        reel = hashlib.sha256(fichier.read_bytes()).hexdigest()
+    except (OSError, json.JSONDecodeError) as exc:
+        return f"verrou illisible : {exc}"
+    if reel != attendu.get("sha256"):
+        return f"empreinte différente du verrou ({attendu.get('commit', '?')})"
+    return None
+
+
 def stack_par_defaut(dossier_donnees: Path | None = None) -> dict[str, list[str]]:
     """La stack livrée avec le moteur — celle de l'auteur, proposée comme exemple."""
     return {nom: list(mots) for nom, mots in module(dossier_donnees).STACK_PRODUCTS.items()}

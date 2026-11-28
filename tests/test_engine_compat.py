@@ -70,3 +70,66 @@ def test_fuseau_resolu_et_jamais_utc():
     """Sur Windows sans tzdata, le moteur retombe silencieusement sur UTC."""
     assert ZoneInfo("Europe/Brussels").key == "Europe/Brussels"
     assert str(veille.TZ) != "UTC", "le moteur est retombé sur UTC : tzdata manque"
+
+
+# --- S2 : l'empreinte du moteur est vérifiée avant de l'exécuter ----------------------
+
+def test_le_moteur_epingle_est_conforme():
+    from secdailybrief import engine
+
+    assert engine.verifier() is None
+
+
+def test_un_moteur_modifie_est_refuse(tmp_path, monkeypatch):
+    """Le diagnostic vérifiait l'empreinte, aucun chemin d'exécution ne le faisait."""
+    import hashlib
+    import json
+
+    from secdailybrief import engine
+
+    (tmp_path / "veille.py").write_text("# moteur trafique\n", encoding="utf-8")
+    (tmp_path / "engine.json").write_text(
+        json.dumps({"commit": "abc1234", "sha256": hashlib.sha256(b"autre chose").hexdigest()}),
+        encoding="utf-8")
+
+    monkeypatch.setattr(engine, "dossier", lambda: tmp_path)
+    souci = engine.verifier()
+
+    assert souci and "empreinte" in souci
+
+
+def test_un_moteur_sans_verrou_est_refuse(tmp_path, monkeypatch):
+    from secdailybrief import engine
+
+    (tmp_path / "veille.py").write_text("# moteur\n", encoding="utf-8")
+    monkeypatch.setattr(engine, "dossier", lambda: tmp_path)
+
+    assert engine.verifier() == "veille.py ou engine.json introuvable"
+
+
+def test_une_execution_refuse_un_moteur_non_conforme(tmp_path, monkeypatch):
+    import logging
+
+    from secdailybrief import engine, logging_setup, runner
+
+    monkeypatch.setattr(engine, "verifier", lambda: "empreinte differente du verrou")
+    monkeypatch.setattr(runner.lock, "instance_unique", _libre)
+    monkeypatch.setattr(runner, "reseau_disponible", lambda *a, **k: True)
+    journal = logging_setup.journaliser(tmp_path / "journal.log")
+    reglages = {"email_user": "a@b.c", "timezone": "Europe/Brussels",
+                "heure": "07:00", "window_hours": "27", "smtp_security": "ssl",
+                "consentement": True}
+
+    resultat = runner.executer(reglages, "motdepasse", journal, dossier=tmp_path)
+
+    assert resultat.statut == "moteur"
+
+
+def _libre():
+    import contextlib
+
+    @contextlib.contextmanager
+    def verrou():
+        yield True
+
+    return verrou()

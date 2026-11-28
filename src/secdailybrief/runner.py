@@ -25,7 +25,7 @@ from pathlib import Path
 
 import requests
 
-from . import historique, lock, paths
+from . import engine, historique, lock, paths
 
 URLS_TEMOIN = (
     "https://cert.cyber.gouv.fr/feed/",
@@ -242,6 +242,14 @@ def executer(config: dict, mot_de_passe: str, journal: logging.Logger, *,
         if preflight and not reseau_disponible():
             journal.warning("Reseau injoignable : execution reportee, la journee reste ouverte.")
             return Resultat("reseau")
+
+        # L'empreinte du moteur, avant de l'executer. Le diagnostic la controlait deja, mais
+        # aucun chemin d'execution ne le faisait : un fichier modifie sur disque partait sans
+        # controle, alors que l'application annonce l'avoir epingle.
+        souci = engine.verifier()
+        if souci:
+            journal.error("Moteur refuse : %s", souci)
+            return Resultat("moteur")
 
         env = environnement(config, mot_de_passe, dossier, jetons, journal)
         debut = time.monotonic()
