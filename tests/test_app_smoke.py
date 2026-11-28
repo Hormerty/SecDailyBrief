@@ -541,3 +541,36 @@ def test_la_fenetre_about_n_a_pas_de_libelle_anglais_en_francais():
 
     for cle in ("about.titre", "about.moteur", "about.licence", "about.depot"):
         assert fr[cle] != en[cle], f"{cle} n'est pas traduit"
+
+
+def test_une_erreur_du_fil_de_travail_debloque_la_fenetre(application, monkeypatch):
+    """Sans cela, « Rapport en cours… » tournait indéfiniment, boutons désactivés."""
+    vues = []
+    monkeypatch.setattr(application, "_signaler_erreur_travail", vues.append)
+    suite_appelee = []
+    application.racine.after = lambda delai, rappel: rappel()   # pas d'attente réelle
+
+    def travail():
+        raise RuntimeError("panne simulee")
+
+    application._en_arriere_plan(travail, suite_appelee.append, delai=1)
+
+    for _ in range(50):                 # le fil de travail est asynchrone
+        if vues:
+            break
+        import time
+
+        time.sleep(0.02)
+
+    assert vues and isinstance(vues[0], RuntimeError)
+    assert not suite_appelee            # le résultat n'est jamais utilisé quand il n'y en a pas
+
+
+def test_le_mode_preview_n_exige_pas_de_mot_de_passe():
+    """L'interface s'en passait, la ligne de commande non : même règle pour les deux."""
+    from secdailybrief import runner
+
+    assert runner.exige_mot_de_passe("preview") is False
+    assert runner.exige_mot_de_passe("sources") is False
+    assert runner.exige_mot_de_passe("run") is True
+    assert runner.exige_mot_de_passe("alerte") is True

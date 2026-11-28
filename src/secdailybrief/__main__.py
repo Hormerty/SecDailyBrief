@@ -56,7 +56,10 @@ def _executer(mode: str, origine: str = "ligne de commande") -> int:
 
     jetons = secrets.charger_jetons(paths.chemin_secret())
     mot_de_passe = jetons.get("smtp_password", "")
-    if not mot_de_passe:
+    # Seuls les modes qui envoient ont besoin du mot de passe, exactement comme dans l'interface :
+    # « --preview » refuse de s'exécuter sans lui alors que le bouton « Voir un aperçu » s'en
+    # passe. La règle vit dans runner.exige_mot_de_passe, une seule fois.
+    if not mot_de_passe and runner.exige_mot_de_passe(mode):
         journal.error("Aucun mot de passe enregistre : ouvrez l'interface et enregistrez-le.")
         return 2
 

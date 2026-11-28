@@ -1012,11 +1012,16 @@ class Application:
         fenêtre reste figée dans son état d'attente. Le fil de travail dépose donc son
         résultat ; le fil principal vient le chercher.
         """
-        etat = {"fait": False, "valeur": None}
+        etat = {"fait": False, "valeur": None, "erreur": None}
 
         def executant() -> None:
             try:
                 etat["valeur"] = travail()
+            except Exception as exc:            # noqa: BLE001 - remonte au fil UI, pas de trace
+                # Sans ce filet, l'exception disparaissait : la fenetre restait sur « Rapport en
+                # cours... » avec tous les boutons desactives, et rien ne disait pourquoi. Le
+                # resultat valait None, et `suite(None)` levait a son tour dans le fil UI.
+                etat["erreur"] = exc
             finally:
                 etat["fait"] = True      # même en cas d'erreur, la fenêtre doit se débloquer
 
@@ -1025,6 +1030,9 @@ class Application:
         def verifier() -> None:
             if not etat["fait"]:
                 self.racine.after(delai, verifier)
+                return
+            if etat["erreur"] is not None:
+                self._signaler_erreur_travail(etat["erreur"])
                 return
             suite(etat["valeur"])
 
@@ -1041,6 +1049,27 @@ class Application:
                 self.var_maj.set(self._texte("panneau.maj").format(version=derniere))
 
         self._en_arriere_plan(updates.derniere_publiee, suite)
+
+    def _signaler_erreur_travail(self, erreur: Exception) -> None:
+        """Une erreur survenue hors du fil UI se dit à l'écran, et rend la main.
+
+        Sans cela, la fenêtre restait sur « Rapport en cours… » avec ses boutons désactivés,
+        indéfiniment : l'exception du fil de travail n'était écrite nulle part, et `suite(None)`
+        levait à son tour dans le fil principal.
+        """
+        try:
+            logging_setup.journaliser(paths.chemin_journal()).exception(
+                "Echec dans le fil de travail : %s", erreur)
+        except Exception:                       # noqa: BLE001 - journaliser ne doit rien masquer
+            pass
+        self._en_cours = False
+        self._maj_en_cours = False
+        try:
+            self._afficher_activite(False)
+            self._activer_boutons(True)
+        except Exception:                       # noqa: BLE001 - page déjà reconstruite
+            pass
+        messagebox.showerror(self._texte("commun.erreur"), f"{type(erreur).__name__} : {erreur}")
 
     def _lancer(self, mode: str, preflight: bool = True) -> None:
         if getattr(self, "_en_cours", False):
