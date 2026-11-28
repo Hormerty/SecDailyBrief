@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Changes accumulate here between two versions. When one is cut, this section becomes the release notes and a new empty one takes its place: nothing gets lost, and nobody has to reconstruct what happened since the last tag.
+
+## 1.7.8 — 28 November 2026
+
 ### Changed
 
 - The engine is re-pinned to 7d6bc40, which carries five commits: sources ranked by what they
