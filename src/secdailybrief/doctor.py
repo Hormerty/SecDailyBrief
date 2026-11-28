@@ -71,7 +71,12 @@ def verifier_certificats() -> Verification:
     dossier existe, vide, et la première requête HTTPS échoue avec « Could not find a
     suitable TLS CA certificate bundle ». C'est arrivé au premier vrai rapport.
     """
-    import certifi
+    try:
+        import certifi
+    except Exception as exc:                 # noqa: BLE001 - binaire sans certifi
+        # Une exception non rattrapee ici annulait les onze autres verifications : le
+        # diagnostic entier disparaissait pour un paquet absent.
+        return Verification("Certificats TLS", ECHEC, f"certifi introuvable : {exc}")
 
     chemin = Path(certifi.where())
     if not chemin.exists():

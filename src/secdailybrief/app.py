@@ -1115,9 +1115,12 @@ class Application:
 
         def travail():
             journal = logging_setup.journaliser(paths.chemin_journal())
+            # Jetons transmis : sans eux, `canaux_alerte()` recevait {} et WEBHOOKS n'etait
+            # jamais pose. Le jour ou un bouton d'alerte apparait, Slack et Telegram se
+            # taisaient sans laisser la moindre trace.
             resultat = runner.executer(self.reglages, self.mot_de_passe, journal,
                                          mode=mode, dossier=self.dossier, preflight=preflight,
-                                         origine="interface")
+                                         jetons=self.jetons, origine="interface")
             return resultat.statut, resultat.duree
 
         def suite(resultat) -> None:
@@ -1326,7 +1329,7 @@ class Application:
             import json
 
             # engine.dossier() sait ou PyInstaller a pose les fichiers : dans le binaire
-            # fige, vendor/ vit sous _internal/, et non a cote de l'executable. C'est
+            # fige, vendor/ vit sous _internal/, et non a cote de l'executable. C'est
             # pourquoi cette fenetre affichait « Engine: ? » alors que le diagnostic, lui,
             # lisait l'empreinte sans peine.
             verrou = json.loads((engine.dossier() / "engine.json").read_text(encoding="utf-8"))

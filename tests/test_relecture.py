@@ -108,7 +108,10 @@ def test_aucune_coquille_connue_dans_les_commentaires():
         for numero, ligne in enumerate(fichier.read_text(encoding="utf-8").splitlines(), 1):
             if not ligne.strip().startswith("#") and '"""' not in ligne:
                 continue
-            for faute in ("endor/", "functionne", "existte"):
+            # « vendor/ » contient « endor/ » : la coquille se cherche sans le v devant.
+            if re.search(r"(?<!v)endor/", ligne):
+                fautes.append(f"{fichier.name}:{numero} endor/")
+            for faute in ("functionne", "existte"):
                 if faute in ligne:
                     fautes.append(f"{fichier.name}:{numero} {faute}")
     assert not fautes, "coquille dans un commentaire :\n" + "\n".join(fautes)

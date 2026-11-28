@@ -1,7 +1,6 @@
 """Textes de l'interface, en français et en anglais.
 
-Deux langues sont livrées ; les autres s'ajoutent en déposant un dictionnaire ici, sans
-toucher au reste du code. Une clé absente retombe sur l'anglais plutôt que d'afficher un
+Neuf langues sont livrées. Une clé absente retombe sur l'anglais plutôt que d'afficher un
 identifiant technique — un utilisateur ne doit jamais voir « wizard.email.label ».
 
 Les noms propres et les mentions légales ne sont pas traduits : « Developed by Hormerty »

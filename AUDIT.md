@@ -73,7 +73,7 @@ account, on files any local account could read and rewrite.
 What was done on 27 November:
 
 - the token was revoked in GitHub, and the API answers 401 since;
-- stripe_backup_code.txt and mc-backup-codes.txt were moved to
+- stripe_backup_code.txt and mc-backup-codes.txt were moved to
   C:\Users\itsan\AppData\Roaming\clefs-sensibles\, whose ACL now grants the owner alone;
 - the revoked token file was left in place for its owner to clean, since the token inside is dead.
 

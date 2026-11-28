@@ -25,6 +25,13 @@ def journaliser(chemin: Path, niveau: int = logging.INFO) -> logging.Logger:
     chemin.parent.mkdir(parents=True, exist_ok=True)
     logger = logging.getLogger("secdailybrief")
     logger.setLevel(niveau)
+    # clear() sans close() laissait un descripteur ouvert a chaque appel : le journal etait
+    # rouvert des dizaines de fois dans une session.
+    for gestionnaire in list(logger.handlers):
+        try:
+            gestionnaire.close()
+        except Exception:       # noqa: BLE001 - un handler deja ferme n'est pas une erreur
+            pass
     logger.handlers.clear()
     gestionnaire = RotatingFileHandler(chemin, maxBytes=TAILLE_MAX,
                                        backupCount=SAUVEGARDES, encoding="utf-8")

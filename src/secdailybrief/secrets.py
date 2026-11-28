@@ -7,6 +7,7 @@ du base64, pour rester inspectable sans être lisible d'un coup d'œil.
 from __future__ import annotations
 
 import base64
+import os
 import json
 from pathlib import Path
 
@@ -24,10 +25,19 @@ def deproteger(chiffre: bytes) -> str:
 def enregistrer(chemin: Path, mot_de_passe: str) -> None:
     """Écrit le secret chiffré, en base64 pour rester inspectable sans être lisible."""
     chemin.parent.mkdir(parents=True, exist_ok=True)
-    chemin.write_bytes(base64.b64encode(proteger(mot_de_passe)))
-    # Sans trousseau, le fichier *est* la protection : 0600, propriétaire seul.
+    donnees = base64.b64encode(proteger(mot_de_passe))
+    # Sans trousseau, le fichier *est* la protection. On le crée directement en 0600 : écrire
+    # puis chmod laissait, sous umask 022, une fenêtre pendant laquelle le secret était lisible
+    # par tous.
     try:
-        chemin.chmod(0o600)
+        descripteur = os.open(chemin, os.O_CREAT | os.O_WRONLY | os.O_TRUNC, 0o600)
+    except OSError:            # noqa: BLE001 - Windows ignore les modes POSIX
+        chemin.write_bytes(donnees)
+    else:
+        with os.fdopen(descripteur, "wb") as fichier:
+            fichier.write(donnees)
+    try:
+        chemin.chmod(0o600)    # un fichier qui existait déjà garde son ancien mode
     except OSError:            # noqa: BLE001 - Windows ignore les modes POSIX
         pass
 
