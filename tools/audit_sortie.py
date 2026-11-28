@@ -44,17 +44,24 @@ def _lignes_journal(jours: int = 7) -> list[str]:
     return gardees
 
 
-def erreurs_repetees(jours: int = 7) -> list[tuple[str, int]]:
-    """Les messages d'erreur qui reviennent : une panne qui se répète n'est plus un incident."""
+def erreurs_repetees(jours: int = 7) -> list[tuple[str, int, str, bool]]:
+    """(message, occurrences, dernière occurrence, est_une_erreur) des messages qui reviennent.
+
+    La date de la dernière occurrence compte autant que le nombre : 83 traces d'un défaut corrigé
+    ce matin ne disent pas la même chose que 83 traces encore vivantes ce soir.
+    """
     compteur: Counter[str] = Counter()
+    derniere: dict[str, str] = {}
+    erreur: dict[str, bool] = {}
     for ligne in _lignes_journal(jours):
         if " ERROR " not in ligne and " WARNING " not in ligne:
             continue
-        message = ligne[24:].strip()
-        # On normalise : un horodatage ou un chemin ne fait pas un message différent.
-        message = re.sub(r"\d+", "N", message)
-        compteur[message[:120]] += 1
-    return [(m, n) for m, n in compteur.most_common() if n >= SEUIL_REPETITION]
+        message = re.sub(r"\d+", "N", ligne[24:].strip())[:120]
+        compteur[message] += 1
+        derniere[message] = ligne[:19]
+        erreur[message] = erreur.get(message, False) or " ERROR " in ligne
+    return [(m, n, derniere[m], erreur[m])
+            for m, n in compteur.most_common() if n >= SEUIL_REPETITION]
 
 
 def contradictions() -> list[str]:
@@ -117,9 +124,13 @@ def main() -> int:
     repetees = erreurs_repetees()
     if not repetees:
         print("  aucune")
-    for message, nombre in repetees[:10]:
-        print(f"  {nombre:3}x {message}")
-        blocages += 1
+    for message, nombre, derniere, est_erreur in repetees[:10]:
+        etiquette = "ERREUR" if est_erreur else "avert."
+        print(f"  {nombre:3}x {etiquette:6} (derniere {derniere}) {message}")
+        if est_erreur:
+            # Un avertissement reseau ne bloque pas ; une erreur repetee, si. La date de la
+            # derniere occurrence dit s'il s'agit d'un defaut vivant ou d'un vestige.
+            blocages += 1
 
     print()
     print("== documentation contre code ==")
@@ -148,17 +159,19 @@ def main() -> int:
 
         import veille  # noqa: PLC0415
 
-        session = requests.Session()
-        session.headers.update({"User-Agent": "SecDailyBrief-audit"})
+        # La session du moteur, pas une session neuve : CISA renvoie 403 a un agent inconnu et
+        # NKI laisse tomber la connexion. Le sas signalait deux sources muettes qui repondent
+        # parfaitement au moteur lui-meme.
+        session = veille.create_session()
         mortes_reseau = 0
         for source in veille.RSS_SOURCES:
             try:
-                reponse = session.get(source["url"], timeout=20)
+                reponse = veille.fetch_feed(session, source["url"])
                 flux = feedparser.parse(reponse.content)
                 if not flux.entries:
                     print(f"  sans entree : {source['name']}")
                     mortes_reseau += 1
-            except requests.RequestException:
+            except (requests.RequestException, OSError, ValueError):
                 print(f"  injoignable : {source['name']}")
                 mortes_reseau += 1
         print(f"  {mortes_reseau} source(s) muette(s) sur {len(veille.RSS_SOURCES)}")

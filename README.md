@@ -187,6 +187,12 @@ through `PYTHONIOENCODING=utf-8` whenever it contains anything beyond ASCII.
 **No em dash in prose.** A colon, a comma or parentheses say the same thing, survive every editor
 and every mail client, and do not change width from one font to the next.
 
+## Publishing a version
+
+docs/RELEASE.md holds the ordered checklist, and 	ools/audit_sortie.py is its gate: it reads the
+seven-day journal for repeated errors, checks that SOURCES.md still describes the code, and lists
+sources that have stopped producing. A version does not leave while a check fails.
+
 ## Licence
 
 MIT : see `LICENSE`.
