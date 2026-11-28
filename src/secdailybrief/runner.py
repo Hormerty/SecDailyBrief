@@ -96,6 +96,20 @@ def environnement(config: dict, mot_de_passe: str, dossier: Path,
     """
     env = {cle: valeur for cle, valeur in os.environ.items()
            if not cle.startswith(("EMAIL_", "SMTP_", "WEBHOOKS"))}
+    # « requests » cherche son paquet de certificats dans l'environnement. Dans un binaire fige,
+    # il ne le trouve pas toujours seul : « Could not find a suitable TLS CA certificate
+    # bundle », une execution morte en 0,1 s et aucun rapport envoye. On le lui donne.
+    try:
+        import certifi
+
+        cacert = certifi.where()
+        if Path(cacert).is_file():
+            env["REQUESTS_CA_BUNDLE"] = cacert
+            env["SSL_CERT_FILE"] = cacert
+        else:
+            journal.warning("cacert.pem absent : %s", cacert)
+    except Exception as exc:                 # noqa: BLE001 - certifi absent : on continue
+        journal.warning("Paquet de certificats introuvable : %s", exc)
     env.update({
         "PYTHONUTF8": "1",
         "PYTHONIOENCODING": "utf-8",
@@ -195,7 +209,8 @@ def _decoder(brut: bytes) -> str:
 def executer(config: dict, mot_de_passe: str, journal: logging.Logger, *,
              mode: str = "run", dossier: Path | None = None,
              preflight: bool = True,
-             jetons: dict[str, str] | None = None) -> Resultat:
+             jetons: dict[str, str] | None = None,
+             origine: str = "") -> Resultat:
     """Une exécution complète : verrou, pré-vol, moteur, journal.
 
     `preflight=False` sert aux diagnostics — « tester les sources » doit pouvoir tourner
@@ -245,7 +260,7 @@ def executer(config: dict, mot_de_passe: str, journal: logging.Logger, *,
         # Une ligne pour l'historique : c'est ce qui permet de repondre « le rapport est-il
         # parti hier ? » sans ouvrir le journal.
         try:
-            historique.enregistrer(statut, duree, mode)
+            historique.enregistrer(statut, duree, mode, origine=origine)
         except OSError as exc:                  # disque plein, dossier en lecture seule…
             journal.warning("Historique non enregistre : %s", exc)
         return Resultat(statut, code, duree, lignes)

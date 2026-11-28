@@ -776,7 +776,7 @@ class Application:
             # journal et le dossier de données. `--moteur` sauterait tout cela.
             commande = runner.commande_application("run")
             xml = schedule.construire_xml(Path(commande[0]), heure=self.brouillon["heure"],
-                                          arguments=" ".join(commande[1:]))
+                                          arguments=" ".join(commande[1:] + ["--planifie"]))
             schedule.installer(xml)
         except Exception as exc:                # noqa: BLE001 - pas de tâche, pas de drame
             self._signaler_programmation(exc, quotidienne=True)
@@ -786,7 +786,7 @@ class Application:
             if self.brouillon.get("alertes_immediates"):
                 commande = runner.commande_application("alerte")
                 xml = schedule.construire_xml_alerte(Path(commande[0]),
-                                                    arguments=" ".join(commande[1:]))
+                                                    arguments=" ".join(commande[1:] + ["--planifie"]))
                 schedule.installer(xml, nom=schedule.NOM_TACHE_ALERTE)
             elif schedule.existe(schedule.NOM_TACHE_ALERTE):
                 schedule.supprimer(schedule.NOM_TACHE_ALERTE)
@@ -1037,7 +1037,8 @@ class Application:
         def travail():
             journal = logging_setup.journaliser(paths.chemin_journal())
             resultat = runner.executer(self.reglages, self.mot_de_passe, journal,
-                                       mode=mode, dossier=self.dossier, preflight=preflight)
+                                         mode=mode, dossier=self.dossier, preflight=preflight,
+                                         origine="interface")
             return resultat.statut, resultat.duree
 
         def suite(resultat) -> None:
@@ -1162,15 +1163,16 @@ class Application:
         cadre = ttk.Frame(fenetre, padding=10)
         cadre.pack(fill="both", expand=True)
 
-        colonnes = ("date", "mode", "statut", "duree")
+        colonnes = ("date", "mode", "statut", "duree", "origine")
         table = ttk.Treeview(cadre, columns=colonnes, show="headings")
         for colonne, cle in zip(colonnes, ("histo.date", "histo.mode", "histo.statut",
-                                           "histo.duree")):
+                                           "histo.duree", "histo.origine")):
             table.heading(colonne, text=self._texte(cle))
         table.column("date", width=180)
         table.column("mode", width=110)
         table.column("statut", width=170)
         table.column("duree", width=80, anchor="e")
+        table.column("origine", width=130)
 
         entrees = historique.recentes()
         for entree in entrees:
@@ -1181,7 +1183,8 @@ class Application:
             table.insert("", "end", values=(str(entree.get("date", "")).replace("T", " "),
                                             str(entree.get("mode", "")),
                                             self._libelle_statut(str(entree.get("statut", ""))),
-                                            duree))
+                                            duree,
+                                            str(entree.get("origine", "") or "")))
         table.pack(fill="both", expand=True)
         if not entrees:
             ttk.Label(cadre, text=self._texte("histo.vide")).pack(anchor="w", pady=(8, 0))

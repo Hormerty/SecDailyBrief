@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Fixed
+
+- **The history showed every run twice, once finished and once failed.** The journal named the
+  cause of the failure: Could not find a suitable TLS CA certificate bundle, six times in two
+  days. The engine child process inherited the environment and 
+equests did not always find its
+  certificate bundle, so the run died in 0.1 s and nothing was sent.
+
+  - the runner now sets REQUESTS_CA_BUNDLE and SSL_CERT_FILE from the certifi file the
+    diagnostic already validates, and warns when it is absent;
+  - two runs written in the same second with the same mode are merged, the worst status winning:
+    they come from one launch seen by two processes;
+  - history entries carry their **origin** (interface, planificateur, ligne de commande),
+    shown as a fifth column. The scheduled task now passes --planifie, so an automatic send can
+    be told apart from a manual one. Without it, the duplicate was impossible to attribute.
+
 Changes accumulate here between two versions. When one is cut, this section becomes the release notes and a new empty one takes its place: nothing gets lost, and nobody has to reconstruct what happened since the last tag.
 
 ## 1.7.7 , 27 November 2026

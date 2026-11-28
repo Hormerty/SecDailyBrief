@@ -44,7 +44,7 @@ def executer_moteur(mode: str = "rapport") -> int:
         return 1
 
 
-def _executer(mode: str) -> int:
+def _executer(mode: str, origine: str = "ligne de commande") -> int:
     dossier = paths.s_assurer_dossier()
     journal = logging_setup.journaliser(paths.chemin_journal())
     reglages = configuration.charger(dossier)
@@ -61,7 +61,7 @@ def _executer(mode: str) -> int:
         return 2
 
     resultat = runner.executer(reglages, mot_de_passe, journal, mode=mode,
-                               dossier=dossier, jetons=jetons)
+                                dossier=dossier, jetons=jetons, origine=origine)
     return 0 if resultat.statut == "ok" else 1
 
 
@@ -113,6 +113,9 @@ def _main(argv: list[str] | None = None) -> int:
     parseur.add_argument("--doctor", action="store_true", help="diagnostic complet")
     # Les deux vérifications du moteur, atteignables depuis le panneau. Sans ces arguments,
     # l'exécutable figé les rejetait : « unrecognized arguments ».
+    # Pose par la tache planifiee : sans cela, rien ne distingue un envoi automatique
+    # d un lancement manuel.
+    parseur.add_argument("--planifie", action="store_true", help=argparse.SUPPRESS)
     parseur.add_argument("--check-feeds", action="store_true", help=argparse.SUPPRESS)
     parseur.add_argument("--check-links", action="store_true", help=argparse.SUPPRESS)
     arguments = parseur.parse_args(argv)
@@ -128,11 +131,11 @@ def _main(argv: list[str] | None = None) -> int:
 
         return doctor.executer()
     if arguments.alerte:
-        return _executer("alerte")
+        return _executer("alerte", "planificateur" if arguments.planifie else "ligne de commande")
     if arguments.preview:
-        return _executer("preview")
+        return _executer("preview", "planificateur" if arguments.planifie else "ligne de commande")
     if arguments.run:
-        return _executer("run")
+        return _executer("run", "planificateur" if arguments.planifie else "ligne de commande")
 
     from . import app  # interface : importée seulement si on en a besoin
 

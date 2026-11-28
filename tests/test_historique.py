@@ -27,8 +27,11 @@ def test_une_execution_est_enregistree(isole_donnees):
 
 
 def test_l_historique_est_borne(isole_donnees):
+    # Des horodatages distincts : deux exécutions dans la même seconde sont désormais fusionnées,
+    # parce qu'elles viennent du même lancement vu par deux processus.
+    depart = datetime.now() - timedelta(days=3)
     for indice in range(historique.MAX_ENTREES + 10):
-        historique.enregistrer("ok", indice, "run")
+        historique.enregistrer("ok", indice, "run", maintenant=depart + timedelta(minutes=indice))
 
     assert len(historique.charger()) == historique.MAX_ENTREES
 
@@ -64,3 +67,47 @@ def test_une_entree_sans_date_est_ignoree(isole_donnees):
 
     assert historique.charger() == [{"statut": "ok"}]
     assert historique.recentes() == []
+
+# --- Historique attribuable, et certificats poses dans l'environnement ---------------------
+
+def test_deux_executions_dans_la_meme_seconde_sont_fusionnees(isole_donnees):
+    """Le planificateur et l'interface peuvent lancer la même exécution : une seule ligne."""
+    moment = datetime.now()
+    historique.enregistrer("ok", 0.1, "run", maintenant=moment, origine="interface")
+    historique.enregistrer("erreur", 0.2, "run", maintenant=moment, origine="planificateur")
+
+    entrees = historique.charger()
+
+    assert len(entrees) == 1
+    assert entrees[0]["statut"] == "erreur"      # le statut le plus grave l'emporte
+    assert entrees[0]["duree"] == 0.2
+    assert entrees[0]["origine"] == "planificateur"
+
+
+def test_deux_modes_differents_ne_sont_pas_fusionnes(isole_donnees):
+    moment = datetime.now()
+    historique.enregistrer("ok", 1, "run", maintenant=moment)
+    historique.enregistrer("ok", 1, "alerte", maintenant=moment)
+
+    assert len(historique.charger()) == 2
+
+
+def test_l_origine_est_conservee(isole_donnees):
+    historique.enregistrer("ok", 1.5, "run", origine="interface")
+
+    assert historique.charger()[-1]["origine"] == "interface"
+
+
+def test_le_paquet_de_certificats_est_pose_dans_l_environnement(tmp_path):
+    """Sans lui, une exécution mourait en 0,1 s sur « CA certificate bundle »."""
+    import logging
+    from pathlib import Path
+
+    from secdailybrief import runner
+
+    env = runner.environnement({"email_user": "a@b.c", "timezone": "Europe/Brussels"},
+                               "motdepasse", Path("."), {}, )
+
+    assert env["REQUESTS_CA_BUNDLE"] == env["SSL_CERT_FILE"]
+    assert env["REQUESTS_CA_BUNDLE"].endswith("cacert.pem")
+    assert "WEBHOOKS" not in env

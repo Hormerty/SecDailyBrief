@@ -34,12 +34,30 @@ def charger() -> list[dict]:
 
 
 def enregistrer(statut: str, duree: float, mode: str,
-                maintenant: datetime | None = None) -> None:
-    """Ajoute une exécution. Écriture atomique : jamais de fichier à moitié écrit."""
+                maintenant: datetime | None = None, origine: str = "") -> None:
+    """Ajoute une exécution. Écriture atomique : jamais de fichier à moitié écrit.
+
+    Deux processus peuvent lancer une exécution dans la même seconde (le planificateur et
+    l'interface, par exemple). Sans fusion, l'historique affichait alors deux lignes au même
+    horodatage et de statuts opposés, ce qui était illisible. Une ligne identique est donc
+    fusionnée avec la plus grave, et l'origine dit qui a lancé quoi.
+    """
     moment = maintenant or datetime.now()
     entrees = charger()
-    entrees.append({"date": moment.isoformat(timespec="seconds"), "statut": statut,
-                    "duree": round(duree, 1), "mode": mode})
+    horodatage = moment.isoformat(timespec="seconds")
+    entree = {"date": horodatage, "statut": statut, "duree": round(duree, 1), "mode": mode,
+              "origine": origine}
+    precedente = entrees[-1] if entrees else None
+    if (precedente and precedente.get("date") == horodatage
+            and precedente.get("mode") == mode):
+        # Même seconde, même mode : on garde le statut le plus grave et la durée la plus longue.
+        if statut != "ok" or not precedente.get("statut"):
+            precedente["statut"] = statut
+            precedente["duree"] = max(float(precedente.get("duree") or 0), round(duree, 1))
+        if origine:
+            precedente["origine"] = origine
+    else:
+        entrees.append(entree)
     entrees = entrees[-MAX_ENTREES:]
 
     destination = chemin()
