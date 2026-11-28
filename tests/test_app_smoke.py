@@ -148,6 +148,7 @@ def test_terminer_enregistre_le_mot_de_passe_et_rafraichit_le_diagnostic(applica
     application.var_fenetre.set("27")
     application.var_fuseau.set("Europe/Brussels")
 
+    application.brouillon["consentement"] = True    # l'assistant exige un accord reel
     application._terminer()
 
     assert secrets.charger_jetons(paths.chemin_secret())["smtp_password"] == \
@@ -218,6 +219,7 @@ def test_le_consentement_est_memorise_et_ne_bloque_plus_au_retour(application, m
     application.var_heure.set("06:00")
     application.var_fenetre.set("27")
     application.var_fuseau.set("Europe/Brussels")
+    application.brouillon["consentement"] = True    # l'assistant exige un accord reel
     application._terminer()
 
     enregistre = config.charger(application.dossier)
@@ -661,3 +663,25 @@ def test_un_test_d_envoi_rate_affiche_l_echec(application, monkeypatch):
         time.sleep(0.01)
 
     assert application.var_test.get() == application._texte("courriel.test.echec")
+
+def test_terminer_sans_consentement_ne_sauvegarde_rien(application, monkeypatch):
+    """Arriver par « Reglages » ne vaut pas accord : la trace d'un consentement doit etre vraie."""
+    import tkinter as tk
+
+    appels = []
+    monkeypatch.setattr(app.configuration, "enregistrer", lambda *a, **k: appels.append(a))
+    pages = []
+    monkeypatch.setattr(application, "page_consentement", lambda: pages.append(True))
+
+    # Les champs de la page de planification, sans construire la page entiere.
+    application.var_heure = tk.StringVar(value="07:00")
+    application.var_alertes = tk.BooleanVar(value=False)
+    application.var_fenetre = tk.StringVar(value="27")
+    application.var_fuseau = tk.StringVar(value="Europe/Brussels")
+    monkeypatch.setattr(application, "_collecter_canaux", lambda: None)
+
+    application.brouillon["consentement"] = False
+    application._terminer()
+
+    assert pages == [True]      # renvoye a la page qui demande l'accord
+    assert appels == []         # et rien n'a ete enregistre

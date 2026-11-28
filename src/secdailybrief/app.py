@@ -811,8 +811,13 @@ class Application:
         self._collecter_canaux()
         self.brouillon["window_hours"] = self.var_fenetre.get().strip()
         self.brouillon["timezone"] = self.var_fuseau.get().strip()
-        # Arriver au bout de l'assistant vaut consentement : il a été demandé en chemin.
-        self.brouillon["consentement"] = True
+        # Le consentement se donne sur sa page, et nulle part ailleurs. L'écrire ici le rendait
+        # vrai pour qui arrivait par « Réglages » depuis le panneau, sans avoir jamais vu la page :
+        # le programme gardait la trace d'un accord qui n'avait pas eu lieu. On renvoie donc à la
+        # page, qui est elle-même la demande.
+        if not self.brouillon.get("consentement"):
+            self.page_consentement()
+            return
 
         problemes = configuration.valider(self.brouillon)
         if problemes:
