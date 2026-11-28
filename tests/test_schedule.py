@@ -75,7 +75,9 @@ def test_la_tache_d_alerte_se_relance_toutes_les_trois_heures():
 
     assert "<TimeTrigger>" in xml
     assert "<Interval>PT3H</Interval>" in xml
-    assert "<Duration>P1D</Duration>" in xml
+    # Ce test verifiait la borne qui tuait la tache au bout d'un jour. Mesure du 28/11/2026 :
+    # avec une duree, le Planificateur affiche « Prochaine execution : N/A » apres la serie.
+    assert "<Duration>" not in xml
     assert "<Arguments>--alerte</Arguments>" in xml
     # Une seule instance à la fois : un passage lent ne doit pas se superposer au suivant.
     assert "<MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>" in xml
@@ -123,3 +125,34 @@ def test_les_unites_s_inspectent_sans_systemd():
 
     assert "OnCalendar=*-*-* 07:30:00" in timer
     assert "[Install]" in timer and "WantedBy=timers.target" in timer
+
+
+def test_la_tache_d_alerte_ne_borne_pas_sa_repetition():
+    """Mesure du 28/11/2026 : avec une durée d'un jour, la tâche s'arrêtait après 8 exécutions.
+
+    Un TimeTrigger ne se déclenche qu'une fois ; sa durée borne donc la seule série qu'il lancera
+    jamais, et le Planificateur affichait ensuite « Prochaine exécution : N/A ».
+    """
+    from pathlib import Path
+
+    from secdailybrief import schedule
+
+    xml = schedule.construire_xml_alerte(Path("SecDailyBrief.exe"))
+
+    assert "<TimeTrigger>" in xml
+    assert "<Duration>" not in xml            # sinon la répétition meurt au bout d'un jour
+    assert "<StopAtDurationEnd>" not in xml
+    assert "<Interval>PT%dH</Interval>" % schedule.HEURES_ALERTE in xml
+
+
+def test_la_tache_quotidienne_garde_sa_fenetre_de_reprise():
+    """Elle, au contraire, doit borner sa reprise : un CalendarTrigger la relance chaque jour."""
+    from pathlib import Path
+
+    from secdailybrief import schedule
+
+    xml = schedule.construire_xml(Path("SecDailyBrief.exe"), heure="07:00")
+
+    assert "<CalendarTrigger>" in xml
+    assert "<Duration>" in xml                # la fenêtre de reprise de 2 h
+    assert "<ScheduleByDay>" in xml           # et le déclenchement quotidien qui la renouvelle

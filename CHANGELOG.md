@@ -4,6 +4,18 @@
 
 ### Fixed
 
+- **The immediate alert task stopped after one day on Windows.** Its trigger was a TimeTrigger
+  with a repetition bounded to P1D: a time trigger fires once, so that duration bounded the only
+  series it would ever start. Measured on 28 November 2026 with a two-minute equivalent: two runs,
+  then Next run: N/A, and the task stays registered but never fires again. The alert task is
+  installed for eight runs every three hours, so alerts would have died after its first day.
+
+  The repetition is now unbounded, which the same experiment confirms: five runs in five minutes,
+  next run still scheduled. The daily task keeps its two-hour retry window, since a
+  CalendarTrigger renews it every day. The task installed on this machine was regenerated.
+
+### Fixed
+
 - **Five remarks from a Reddit review of `app.py`, all confirmed in the code.** The Slack webhook,
   the Discord webhook and the Telegram token were plain entries, readable on a shared screen or in
   a screenshot, while the SMTP password was masked; all four are masked now. A channel switched on

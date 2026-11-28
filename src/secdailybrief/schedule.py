@@ -100,10 +100,13 @@ def construire_xml_alerte(executable: Path, heures: int = HEURES_ALERTE,
     <TimeTrigger>
       <StartBoundary>{debut:%Y-%m-%dT%H:%M:%S}</StartBoundary>
       <Enabled>true</Enabled>
+      <!-- Aucune duree de repetition, volontairement. Mesure sur Windows le 28/11/2026 : avec
+           une duree d'un jour, la tache s'executait huit fois puis affichait « Prochaine
+           execution : N/A ». Un TimeTrigger ne se declenche qu'une fois, et sa duree borne la
+           seule serie qu'il lancera jamais. Les alertes mouraient apres 24 heures ; sans
+           duree, la repetition continue indefiniment. -->
       <Repetition>
         <Interval>PT{heures}H</Interval>
-        <Duration>P1D</Duration>
-        <StopAtDurationEnd>true</StopAtDurationEnd>
       </Repetition>
     </TimeTrigger>
   </Triggers>
