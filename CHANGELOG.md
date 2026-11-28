@@ -4,7 +4,7 @@
 
 Changes accumulate here between two versions. When one is cut, this section becomes the release notes and a new empty one takes its place: nothing gets lost, and nobody has to reconstruct what happened since the last tag.
 
-## 1.7.8 — 28 November 2026
+## 1.7.8, 28 November 2026
 
 ### Changed
 
@@ -94,7 +94,7 @@ equests did not always find its
 
 Changes accumulate here between two versions. When one is cut, this section becomes the release notes and a new empty one takes its place: nothing gets lost, and nobody has to reconstruct what happened since the last tag.
 
-## 1.7.7 , 27 November 2026
+## 1.7.7, 27 November 2026
 
 Changes accumulate here between two versions. When one is cut, this section becomes the release
 notes and a new empty one takes its place: nothing gets lost, and nobody has to reconstruct what
