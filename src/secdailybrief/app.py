@@ -11,6 +11,8 @@ Choix assumés pour cette version :
 """
 from __future__ import annotations
 
+import binascii
+
 import locale
 import os
 import re
@@ -76,10 +78,43 @@ def reglages_initiaux(dossier: Path) -> dict:
     La détection ne s'applique qu'à une première exécution : une fois l'utilisateur passé par
     l'assistant, son choix de fuseau lui appartient et n'est jamais écrasé.
     """
-    reglages = configuration.charger(dossier)
+    # Un config.json tronqué levait ValueError ici, donc avant que la fenêtre existe :
+    # l'application ne s'ouvrait pas, et l'utilisateur n'avait aucun moyen de corriger depuis
+    # l'interface. On repart des défauts, ce qui ramène l'assistant, et on dit pourquoi.
+    try:
+        reglages = configuration.charger(dossier)
+    except ValueError as exc:
+        logging_setup.journaliser(paths.chemin_journal()).warning(
+            "Réglages illisibles, retour aux défauts : %s", exc)
+        reglages = dict(configuration.DEFAUTS)
     if not configuration.chemin_config(dossier).exists():
         reglages["timezone"] = fuseau.zone_iana()
     return reglages
+
+
+def jetons_surs(chemin: Path) -> dict[str, str]:
+    """Les secrets relus, ou {} si le fichier est abime.
+
+    Un fichier tronque, copie d'une autre machine ou ecrit par un autre compte leve dans
+    secrets.charger : binascii.Error sur le base64, UnicodeDecodeError sur le clair, OSError
+    quand DPAPI refuse. Non rattrape, cela fermait la porte de l'application.
+    """
+    try:
+        return secrets.charger_jetons(chemin)
+    except (ValueError, OSError, binascii.Error) as exc:
+        logging_setup.journaliser(paths.chemin_journal()).warning(
+            "Secret illisible, mot de passe a ressaisir : %s", exc)
+        return {}
+
+
+def perimetre_sur(dossier: Path) -> dict:
+    """Le perimetre relu, ou {} s'il est abime : la page qui le controle le signalera."""
+    try:
+        return configuration.charger_perimetre(dossier)
+    except ValueError as exc:
+        logging_setup.journaliser(paths.chemin_journal()).warning(
+            "Perimetre illisible : %s", exc)
+        return {}
 
 
 class Application:
@@ -89,8 +124,8 @@ class Application:
         self.racine = racine
         self.dossier = dossier
         self.reglages = reglages_initiaux(dossier)
-        self.jetons = secrets.charger_jetons(paths.chemin_secret())
-        self.perimetre = configuration.charger_perimetre(dossier)
+        self.jetons = jetons_surs(paths.chemin_secret())
+        self.perimetre = perimetre_sur(dossier)
 
         self.langue = self.reglages.get("langue") or i18n.apparier_langue_systeme(
             langue_du_systeme())

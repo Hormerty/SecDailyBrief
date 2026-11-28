@@ -43,9 +43,18 @@ def enregistrer(chemin: Path, mot_de_passe: str) -> None:
 
 
 def charger(chemin: Path) -> str | None:
-    """Relit le secret, ou None s'il n'y en a pas encore."""
+    """Relit le secret, ou None s'il n'y en a pas, ou s'il est illisible.
+
+    Un fichier tronque, copie d'une autre machine ou ecrit par un autre compte leve ici :
+    binascii.Error sur le base64, UnicodeDecodeError sur le clair, OSError quand DPAPI refuse
+    de dechiffrer. Non rattrape, cela empechait l'application de demarrer, sans aucun moyen de
+    ressaisir le mot de passe depuis l'interface.
+    """
     if not chemin.exists():
         return None
+    # On leve, volontairement : un blob modifie doit se voir, pas se confondre avec « pas de
+    # mot de passe ». Ce sont les appelants qui rattrapent, pour que l'application s'ouvre au
+    # lieu de mourir sur un fichier abime.
     return deproteger(base64.b64decode(chemin.read_bytes()))
 
 

@@ -238,3 +238,44 @@ def test_une_ecriture_ratee_ne_laisse_pas_de_provisoire(tmp_path, monkeypatch):
 
     restes = list(tmp_path.glob("*.tmp"))
     assert not restes, f"provisoire laisse : {restes}"
+
+
+# --- A5 : un fichier d'état abîmé ne ferme plus la porte ------------------------------
+
+def test_des_reglages_illisibles_redonnent_les_defauts(tmp_path):
+    """Un config.json tronqué levait ValueError avant que la fenêtre existe."""
+    from secdailybrief import app, config
+
+    (tmp_path / "config.json").write_text("{ ceci n'est pas du json", encoding="utf-8")
+
+    reglages = app.reglages_initiaux(tmp_path)
+
+    assert set(config.DEFAUTS) <= set(reglages)
+    assert reglages["langue"] == config.DEFAUTS["langue"]
+
+
+def test_un_secret_illisible_donne_un_dictionnaire_vide(tmp_path):
+    """Blob tronqué, autre machine, autre compte : l'application s'ouvre sans mot de passe."""
+    from secdailybrief import app
+
+    secret = tmp_path / "secret.dpapi"
+    for contenu in (b"pas-du-base64-!!", b"\xff\xfe\x00binaire", b""):
+        secret.write_bytes(contenu)
+        assert app.jetons_surs(secret) == {}, contenu
+
+
+def test_un_secret_valide_est_toujours_lu(tmp_path):
+    from secdailybrief import app, secrets
+
+    secret = tmp_path / "secret.dpapi"
+    secrets.enregistrer_jetons(secret, {"smtp_password": "motdepasse"})
+
+    assert app.jetons_surs(secret)["smtp_password"] == "motdepasse"
+
+
+def test_un_perimetre_illisible_donne_un_dictionnaire_vide(tmp_path):
+    from secdailybrief import app
+
+    (tmp_path / "perimetre.json").write_text("{ invalide", encoding="utf-8")
+
+    assert app.perimetre_sur(tmp_path) == {}

@@ -47,7 +47,11 @@ def executer_moteur(mode: str = "rapport") -> int:
 def _executer(mode: str, origine: str = "ligne de commande") -> int:
     dossier = paths.s_assurer_dossier()
     journal = logging_setup.journaliser(paths.chemin_journal())
-    reglages = configuration.charger(dossier)
+    try:
+        reglages = configuration.charger(dossier)
+    except ValueError as exc:
+        journal.error("Reglages illisibles : %s", exc)
+        return 2
 
     problemes = configuration.valider(reglages)
     if problemes:

@@ -4,6 +4,18 @@
 
 ### Fixed
 
+- **A corrupted state file no longer closes the door.** config.json truncated, secret.dpapi
+  copied from another machine or written by another account, perimetre.json invalid: three
+  ValueError, inascii.Error or OSError raised while the window was still being built, so the
+  application refused to open and the user had no way to fix anything from the interface.
+
+  The secret stays strict, deliberately: an altered blob must be visible. It is the caller that
+  gives way. Settings fall back to the defaults, which brings the wizard back; secrets fall back to
+  none, which makes the assistant ask for the password; an unreadable perimeter falls back to empty,
+  which the page already knows how to report. Each fallback is journalled with its cause.
+
+### Fixed
+
 - **The immediate alert task stopped after one day on Windows.** Its trigger was a TimeTrigger
   with a repetition bounded to P1D: a time trigger fires once, so that duration bounded the only
   series it would ever start. Measured on 28 November 2026 with a two-minute equivalent: two runs,
