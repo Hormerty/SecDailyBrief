@@ -574,3 +574,22 @@ def test_le_mode_preview_n_exige_pas_de_mot_de_passe():
     assert runner.exige_mot_de_passe("sources") is False
     assert runner.exige_mot_de_passe("run") is True
     assert runner.exige_mot_de_passe("alerte") is True
+
+
+def test_les_erreurs_de_reglages_sont_affichees_en_clair(application):
+    """« courriel.expediteur » au lieu d'« Adresse d'envoi » : illisible au moment où l'on est bloqué."""
+    from secdailybrief import config
+
+    problemes = config.valider({})
+    libelles = application._libelles(problemes)
+
+    assert "courriel.expediteur" not in libelles
+    assert "Adresse d'envoi" in libelles
+    assert len(libelles) == len(problemes)
+
+
+def test_les_phrases_du_perimetre_traversent_sans_etre_traduites(application):
+    """valider_perimetre() renvoie des phrases, pas des clés : elles doivent rester intactes."""
+    phrase = "le fichier doit contenir un objet JSON"
+
+    assert application._libelles([phrase]) == [phrase]

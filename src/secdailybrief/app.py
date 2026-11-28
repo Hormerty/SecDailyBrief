@@ -160,7 +160,7 @@ class Application:
         self._reglages_en_attente = []
         logging_setup.journaliser(paths.chemin_journal()).error(
             "Reglages invalides : %s", "; ".join(problemes))
-        details = "\n".join(f"• {probleme}" for probleme in problemes)
+        details = "\n".join(f"• {probleme}" for probleme in self._libelles(problemes))
         question = self._texte("reglages.invalide").format(details=details)
         if messagebox.askyesno(self._texte("commun.information"), question):
             self.page_courriel()
@@ -176,7 +176,7 @@ class Application:
         message = "; ".join(problemes)
         logging_setup.journaliser(paths.chemin_journal()).error(
             "Perimetre invalide : %s", message)
-        details = "\n".join(f"• {probleme}" for probleme in problemes)
+        details = "\n".join(f"• {probleme}" for probleme in self._libelles(problemes))
         question = self._texte("perimetre.invalide").format(details=details)
         if messagebox.askyesno(self._texte("commun.information"), question):
             self._restaurer_perimetre()
@@ -219,6 +219,17 @@ class Application:
 
     def _texte(self, cle: str) -> str:
         return self.textes.get(cle, cle)
+
+    def _libelles(self, problemes: list[str]) -> list[str]:
+        """Traduit les clés de validation ; laisse passer ce qui est déjà une phrase.
+
+        `config.valider()` renvoie des clés (`courriel.expediteur`), `valider_perimetre()` des
+        phrases. Les deux finissent dans la même boîte : traduire les unes et pas les autres
+        affichait « courriel.expediteur, planif.heure » à un utilisateur bloqué, alors que les
+        traductions existaient dans les neuf langues. `_texte` rend la clé telle quelle quand
+        elle est absente du dictionnaire, donc les phrases traversent sans dommage.
+        """
+        return [self._texte(probleme) for probleme in problemes]
 
     def _basculer_langue(self, code: str) -> None:
         self.langue = code
@@ -755,7 +766,8 @@ class Application:
 
         problemes = configuration.valider(self.brouillon)
         if problemes:
-            messagebox.showerror(self._texte("commun.erreur"), ", ".join(problemes))
+            messagebox.showerror(self._texte("commun.erreur"),
+                                 ", ".join(self._libelles(problemes)))
             return
         if not self.mot_de_passe:
             messagebox.showerror(self._texte("commun.erreur"),
