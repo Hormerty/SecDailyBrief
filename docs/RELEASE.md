@@ -30,6 +30,32 @@ cd "D:\Security Code GitHub\Sec_Daily_report-"
 "D:\Security Code GitHub\SecDailyBrief\.venv\Scripts\python.exe" -m pytest tests/test_veille.py -q
 ```
 
+## Read the diff, as a stranger
+
+The gate runs code. It cannot see a webhook shown in clear on a shared screen, a field saved
+without validation, or a comment that no longer describes the function under it. Five such remarks
+arrived from a Reddit review of pp.py and none of them would ever fail a test.
+
+So before the tag, read what changed since the last one, with this checklist in hand:
+
+1. a secret that can become visible (an entry without show, a token in a log line, a value in
+   config.json instead of the encrypted file);
+2. a field saved without validation, where a typo fails silently three days later;
+3. an inconsistency with the file's own conventions;
+4. a destructive operation that does not destroy what its label promises;
+5. a typo, or a comment that no longer matches the code;
+6. a swallowed exception that hides a real failure.
+
+Everything mechanisable in that list is already a test: 	ests/test_relecture.py refuses an entry
+of a secret without show=, a credential in a log line, an environment variable in mixed case, an
+except Exception: pass without its 
+oqa, and a known typo in a comment. It runs with the suite,
+so it runs on every commit and, therefore, before any tag. The six categories that remain need a
+reader: not a linter, a person or an agent who has not written the lines.
+
+Delegating that read to a fresh agent is worth the two minutes: whoever wrote the line will read
+what they meant, not what is written.
+
 ## The gate
 
 ```powershell
